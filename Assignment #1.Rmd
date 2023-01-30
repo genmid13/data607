@@ -1,0 +1,87 @@
+#Introduction 
+ 
+ Article: https://projects.fivethirtyeight.com/redlining/
+ 
+The data presented derives from a study conducted on the continuation of redlining 
+where the historical use of the HOLC grading system based on race population that determined
+what areas were best (graded A) or desirable (graded B) to invest in (mostly white areas), 
+and those that were declining (graded C) or hazardous (graded D) (mostly black areas) still are
+prevalent in the segregation of many cities.
+
+This data analysis looks into the segregation of the cities of upstate New York
+relative to their HOLC graded living areas 
+
+
+
+#Loading Packages & Reading data
+```{r}
+library(tidyverse)
+library(RCurl)
+ x <- getURL("https://raw.githubusercontent.com/fivethirtyeight/data/master/redlining/metro-grades.csv")
+ redlining_data <- read.csv(text = x)
+
+```
+
+#Creating NY Subset
+```{r}
+ny_redlining <- redlining_data %>%
+  select("metro_area", "holc_grade", "pct_white", "pct_black", "pct_hisp", 
+         "pct_asian", "pct_other") %>%
+  filter(grepl("NY", metro_area)) %>%
+  mutate(pct_nonwhite_sum = rowSums(across(c(pct_black, pct_hisp, pct_asian, pct_other))))
+
+```
+
+#Checking for Missing Variables
+```{r}
+sum(is.na(redlining_data))
+
+```
+
+#Comparing HOLC Grade between White and Non White population percentages
+```{r}
+df <- ny_redlining %>%
+  select("metro_area", "holc_grade", "pct_white", "pct_nonwhite_sum")
+
+unique(df$metro_area)
+```
+
+#Regions designated as grade A by HOLC
+```{r}
+a_b <- df %>%
+  filter(grepl("A|B", holc_grade)) 
+
+
+print("Average Percentage of White People living in greenlined areas (A or B HOLC graded areas)")
+mean(a_b$pct_white)
+
+print("average Percentage of Non-White People living in greenlined areas (A or B HOLC graded areas)")
+mean(a_b$pct_nonwhite_sum)
+```
+
+
+#Regions designated as grade C and D  by HOLC
+```{r}
+c_d <- df %>%
+  filter(grepl("C|D", holc_grade)) 
+
+print("Average Percentage of White People living in redlined areas (C or D HOLC graded areas)")
+mean(c_d$pct_white)
+
+print("Average of Percentage of Non-White People living in redlined (C or D HOLC graded areas)")
+mean(c_d$pct_nonwhite_sum)
+```
+
+
+#Conclusion
+
+In the 6 upstate NY cities used to investigate the continue segregation between 
+white and non-white people into greenlined and redlined areas, it was found that
+the greenlined areas contained 66.68% of white people vs the 33.32% of non-white people.
+For the redlined areas in the investigated cities, it ws found that 44.99% of white 
+people lived in these areas white 55.01% lived in the areas. White people
+are more likely to reside in areas deemed as investable while racial minorities
+are more likely to reside in neglected areas.
+To further this study, I recommend gathering average demographic information such 
+as average income. By doing so, the segregated areas can be compared to elucidate 
+if income differences is a clear distinction between populations.
