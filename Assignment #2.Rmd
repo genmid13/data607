@@ -1,0 +1,260 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+## Introduction 
+The table used in this analysis derives from a SQL Database that was used to record the attitudes of 5 survey respondents on the top 6 movies in 2022.
+Along with the collection of attitudes, the demographic variables of each participant was also recorded to draw any conclusion of how the selected movies were perceived may relate to demographic factors.
+The movies included in the dataset are...
+  1. Top Gun Maverick
+  2. Black Panther: Wakanda Forever
+  3. Avatar: The Way of Water
+  4. Doctor Strange in the Multiverse of Madness
+  5. Jurassic World Domination
+  6. Minions: The Rise of Guru
+
+The likert scale used for the survey were all formatted positively so the overall scale is from 1-5, 1 being the most negative towards the topic of a question, and 5 having the most positive attitude towards said question.
+
+## Loading Packages
+```{r}
+library(RPostgreSQL)
+library(RPostgres)
+library(DBI)
+library(dbplyr)
+library(tidyverse)
+
+```
+
+
+## Connecting to SQL Database
+```{r}
+con <- dbConnect(RPostgres::Postgres(), dbname = '2022popmovies', 
+                host = 'localhost',
+                port = 5434,
+                user = rstudioapi::askForPassword("Database user"),
+                password = rstudioapi::askForPassword("Database password"))
+```
+
+## Data Manipulation
+```{r}
+popmovies2022 <- dbReadTable(con, "2022popmovies")
+
+#renaming misspelled columns
+
+popmovies2022 <- rename(popmovies2022, Satisfaction.with.TGM.ending = Satisfication.with.TGM.ending)
+popmovies2022 <- rename(popmovies2022, Satisfaction.with.TGM.overall = Satisfication.with.TGM.overall)
+popmovies2022 <- rename(popmovies2022, Satisfaction.with.BPWF.ending = Satisfication.with.BPWF.ending)
+popmovies2022 <- rename(popmovies2022, Satisfaction.with.BPWF.overall = Satisfication.with.BPWF.overall)
+popmovies2022 <- rename(popmovies2022, Satisfaction.with.AWW.ending = Satisfication.with.AWW.ending)
+popmovies2022 <- rename(popmovies2022, Satisfaction.with.AWW.overall = Satisfication.with.AWW.overall)
+popmovies2022 <- rename(popmovies2022, Satisfaction.with.DSMM.ending = Satisfication.with.DSMM.ending)
+popmovies2022 <- rename(popmovies2022, Satisfaction.with.DSMM.overall = Satisfication.with.DSMM.overall)
+popmovies2022 <- rename(popmovies2022, Satisfaction.with.JWD.ending = Satisfication.with.JWD.ending)
+popmovies2022 <- rename(popmovies2022, Satisfaction.with.JWD.overall = Satisfication.with.JWD.overall)
+popmovies2022 <- rename(popmovies2022, Satisfaction.with.MRG.ending = Satisfication.with.MRG.ending)
+popmovies2022 <- rename(popmovies2022, Satisfaction.with.MRG.overall = Satisfication.with.MRG.overall)
+```
+## Missing values
+the missing values in this table represents those who did not watch the designated movie and therefore cannot express any attitudes towards them. The msising data will be replaced by the number 0, not to represent their attitudes on the 1-5 likert scale but to represent their absence of attitudes.
+
+```{r}
+#is.na(popmovies2022)
+
+ popmovies2022[,c("Age", "Racial.Ethnic.Identity", "Highest.education.attained", "Work.Status", "Education.Status", "Seen.Top.Gun.Maverick..1.yes.", "emotional.engage.TGM", "Likable.Character.TGM", "Entertaining.TGM", "Enjoyable.Visuals.TGM", "Memorable.TGM", "Recommending.TGM.to.a.friend", "Watch.TGM.again", "Satisfaction.with.TGM.ending", "Satisfaction.with.TGM.overall", "Rating.TGM.story", "Seen.Black.Panther..Wakanda.Forever..1.yes.", "emotional.engaged.with.BPWF", "Likable.Character.BPWF", "Entertaining.BPWF", "Enjoyable.Visuals.BPWF", "Memorable.BPWF", "Recommending.BPWF.to.a.friend", "Watch.BPWF.again", "Satisfaction.with.BPWF.ending", "Satisfaction.with.BPWF.overall", "Rating.BPWF.story", "Seen.Avatar..The.Way.Of.Water..1.yes.", "emotional.engaged.with.AWW", "Likable.Character.AWW", "Entertaining.AWW", "Enjoyable.Visuals.AWW", "Memorable.AWW", "Recommending.AWW.to.a.friend", "Watch.AWW.again", "Satisfaction.with.AWW.ending", "Satisfaction.with.AWW.overall", "Rating.AWW.story", "Seen..Doctor.Strange.in.the.Multiverse.of.Madness..1.yes.", "emotional.engaged.with.DSMM", "Likable.Character.DSMM", "Entertaining.DSMM", "Enjoyable.Visuals.DSMM", "Memorable.DSMM", "Recommending.DSMM.to.a.friend", "Watch.DSMM.again", "Satisfaction.with.DSMM.ending", "Satisfaction.with.DSMM.overall", "Rating.DSMM.story", "Seen.Jurassic.World..Dominion..1.yes.", "emotional.engaged.with.JWD", "Likable.Character.JWD", "Entertaining.JWD", "Enjoyable.Visuals.JWD", "Memorable.JWD", "Recommending.JWD.to.a.friend", "Watch.JWD.again", "Satisfaction.with.JWD.ending", "Satisfaction.with.JWD.overall", "Rating.JWD.story", "Seen.Minions..The.Rise.of.Guru..1.yes.", "emotional.engaged.with.MRG", "Likable.Character.MRG", "Entertaining.MRG", "Enjoyable.Visuals.MRG", "Memorable.MRG", "Recommending.MRG.to.a.friend", "Watch.MRG.again", "Satisfaction.with.MRG.ending", "Satisfaction.with.MRG.overall", "Rating.MRG.story")][is.na(popmovies2022[,c("Age", "Racial.Ethnic.Identity", "Highest.education.attained", "Work.Status", "Education.Status", "Seen.Top.Gun.Maverick..1.yes.", "emotional.engage.TGM", "Likable.Character.TGM", "Entertaining.TGM", "Enjoyable.Visuals.TGM", "Memorable.TGM", "Recommending.TGM.to.a.friend", "Watch.TGM.again", "Satisfaction.with.TGM.ending", "Satisfaction.with.TGM.overall", "Rating.TGM.story", "Seen.Black.Panther..Wakanda.Forever..1.yes.", "emotional.engaged.with.BPWF", "Likable.Character.BPWF", "Entertaining.BPWF", "Enjoyable.Visuals.BPWF", "Memorable.BPWF", "Recommending.BPWF.to.a.friend", "Watch.BPWF.again", "Satisfaction.with.BPWF.ending", "Satisfaction.with.BPWF.overall", "Rating.BPWF.story", "Seen.Avatar..The.Way.Of.Water..1.yes.", "emotional.engaged.with.AWW", "Likable.Character.AWW", "Entertaining.AWW", "Enjoyable.Visuals.AWW", "Memorable.AWW", "Recommending.AWW.to.a.friend", "Watch.AWW.again", "Satisfaction.with.AWW.ending", "Satisfaction.with.AWW.overall", "Rating.AWW.story", "Seen..Doctor.Strange.in.the.Multiverse.of.Madness..1.yes.", "emotional.engaged.with.DSMM", "Likable.Character.DSMM", "Entertaining.DSMM", "Enjoyable.Visuals.DSMM", "Memorable.DSMM", "Recommending.DSMM.to.a.friend", "Watch.DSMM.again", "Satisfaction.with.DSMM.ending", "Satisfaction.with.DSMM.overall", "Rating.DSMM.story", "Seen.Jurassic.World..Dominion..1.yes.", "emotional.engaged.with.JWD", "Likable.Character.JWD", "Entertaining.JWD", "Enjoyable.Visuals.JWD", "Memorable.JWD", "Recommending.JWD.to.a.friend", "Watch.JWD.again", "Satisfaction.with.JWD.ending", "Satisfaction.with.JWD.overall", "Rating.JWD.story", "Seen.Minions..The.Rise.of.Guru..1.yes.", "emotional.engaged.with.MRG", "Likable.Character.MRG", "Entertaining.MRG", "Enjoyable.Visuals.MRG", "Memorable.MRG", "Recommending.MRG.to.a.friend", "Watch.MRG.again", "Satisfaction.with.MRG.ending", "Satisfaction.with.MRG.overall", "Rating.MRG.story")])] <- 0
+popmovies2022
+
+
+
+```
+## Retrieving Overall Ratings and Creating a New Table
+```{r}
+ 
+popmovies2022$TGM_rating <- rowMeans(popmovies2022[, c("emotional.engage.TGM", 
+                                                               "Likable.Character.TGM", 
+                                                               "Entertaining.TGM", 
+                                                               "Enjoyable.Visuals.TGM", 
+                                                               "Memorable.TGM", 
+                                                               "Recommending.TGM.to.a.friend", 
+                                                               "Watch.TGM.again", 
+                                                               "Satisfaction.with.TGM.ending", 
+                                                               "Satisfaction.with.TGM.overall", 
+                                                               "Rating.TGM.story")])
+
+popmovies2022$BPWF_rating <- rowMeans(popmovies2022[, c("emotional.engaged.with.BPWF", 
+                                                                "Likable.Character.BPWF", 
+                                                                "Entertaining.BPWF", 
+                                                                "Enjoyable.Visuals.BPWF", 
+                                                                "Memorable.BPWF", 
+                                                                "Recommending.BPWF.to.a.friend", 
+                                                                "Watch.BPWF.again", 
+                                                                "Satisfaction.with.BPWF.ending", 
+                                                                "Satisfaction.with.BPWF.overall", 
+                                                                "Rating.BPWF.story")])
+
+popmovies2022$AWW_rating <- rowMeans(popmovies2022[, c("emotional.engaged.with.AWW", 
+                                                               "Likable.Character.AWW", 
+                                                               "Entertaining.AWW", 
+                                                               "Enjoyable.Visuals.AWW", 
+                                                               "Memorable.AWW", 
+                                                               "Recommending.AWW.to.a.friend", 
+                                                               "Watch.AWW.again", 
+                                                               "Satisfaction.with.AWW.ending", 
+                                                               "Satisfaction.with.AWW.overall", 
+                                                               "Rating.AWW.story")])
+
+popmovies2022$DSMM_rating <- rowMeans(popmovies2022[, c("emotional.engaged.with.DSMM", 
+                                                                "Likable.Character.DSMM", 
+                                                                "Entertaining.DSMM", 
+                                                                "Enjoyable.Visuals.DSMM", 
+                                                                "Memorable.DSMM", 
+                                                                "Recommending.DSMM.to.a.friend", 
+                                                                "Watch.DSMM.again", 
+                                                                "Satisfaction.with.DSMM.ending", 
+                                                                "Satisfaction.with.DSMM.overall", 
+                                                                "Rating.DSMM.story")])
+
+popmovies2022$JWD_rating <- rowMeans(popmovies2022[, c("emotional.engaged.with.JWD", 
+                                                               "Likable.Character.JWD", 
+                                                               "Entertaining.JWD", 
+                                                               "Enjoyable.Visuals.JWD", 
+                                                               "Memorable.JWD", 
+                                                               "Recommending.JWD.to.a.friend", 
+                                                               "Watch.JWD.again", 
+                                                               "Satisfaction.with.JWD.ending", 
+                                                               "Satisfaction.with.JWD.overall", 
+                                                               "Rating.JWD.story")])
+
+popmovies2022$MRG_rating <- rowMeans(popmovies2022[, c("emotional.engaged.with.MRG", 
+                                                               "Likable.Character.MRG", 
+                                                               "Entertaining.MRG", 
+                                                               "Enjoyable.Visuals.MRG", 
+                                                               "Memorable.MRG", 
+                                                               "Recommending.MRG.to.a.friend", 
+                                                               "Watch.MRG.again", 
+                                                               "Satisfaction.with.MRG.ending", 
+                                                               "Satisfaction.with.MRG.overall", 
+                                                               "Rating.MRG.story")])
+
+ratings <- popmovies2022 %>%
+  select(c(Age, Racial.Ethnic.Identity, Highest.education.attained, Work.Status, Education.Status,TGM_rating, BPWF_rating, AWW_rating, DSMM_rating, JWD_rating, MRG_rating))
+
+```
+
+
+## Visualization of Top Gun Maverick ratings
+
+```{r}
+
+mean(ratings$TGM_rating[ratings$TGM_rating != 0])
+
+```
+```{r}
+  ggplot(ratings, aes(TGM_rating)) +
+  geom_bar()
+```
+```{r}
+  ggplot(ratings, aes(Age, TGM_rating)) +
+  geom_point()
+```
+
+
+## Visualization of Black Panther: Wakanda Forever ratings
+
+```{r}
+mean(ratings$BPWF_rating[ratings$BPWF_rating!=0])
+```
+```{r}
+ggplot(ratings, aes(BPWF_rating)) +
+  geom_bar()
+```
+
+
+```{r}
+  ggplot(ratings, aes(Age, BPWF_rating)) +
+  geom_point()
+```
+
+
+
+## Visualization of Avatar: The Way of Water ratings
+
+```{r}
+mean(ratings$AWW_rating)
+```
+```{r}
+ggplot(ratings, aes(AWW_rating)) +
+  geom_bar()
+```
+
+```{r}
+  ggplot(ratings, aes(Age, AWW_rating)) +
+  geom_point()
+```
+
+
+## Visualization of Doctor Strange in the Multiverse of Madness ratings
+```{r}
+mean(ratings$DSMM_rating[ratings$DSMM_rating!=0])
+```
+```{r}
+ggplot(ratings, aes(DSMM_rating)) + 
+  geom_bar()
+```
+
+
+```{r}
+  ggplot(ratings, aes(Age, DSMM_rating)) +
+  geom_point()
+```
+
+
+## Visualization of Jurassic World Domination ratings
+
+```{r}
+mean(ratings$JWD_rating[ratings$JWD_rating!=0])
+```
+```{r}
+ggplot(ratings, aes(JWD_rating)) +
+  geom_bar()
+```
+
+
+
+
+
+## Visualization of Minion: The Rise of Guru ratings
+```{r}
+mean(ratings$MRG_rating[ratings$MRG_rating !=0])
+```
+```{r}
+ggplot(ratings, aes(MRG_rating)) +
+  geom_bar()
+```
+
+```{r}
+  ggplot(ratings, aes(Age, MRG_rating)) +
+  geom_point()
+```
+```{r}
+
+```
+
+
+## Results & Conclusion
+
+0 = Movie not seen
+1-5 = Likert scale
+
+
+Of the 5 respondents surveyed on their attitudes toward Top Gun Maverick, it was found that only 2/5 watched the film where the average of their ratings were 4.15/5. Age and the ratings of the film shows to be negatively correlated meaning as the age increase, the attitudes become more negative.
+For Black Panther: Wakanda Forever, it was found that  4 of the 5 participants watched the film where the average of their ratings were 4.875/5. There does not seem to be a correlation betwee Age and the ratings of the film as the scatter plot shows a consistent rating of 4-5 across all ages.
+None of those surveyed watched Avatar: The Way of Water so attitudes/ratings was not recorded. 
+Of the 5 respondents surveyed on their attitudes toward Doctor Strange in the Multiverse of Madness, it was found that only 2 of the 5 participants watched the film where the average of their ratings were 4.2/5. Age and the ratings of the film shows to be positively correlated meaning as the age increase, so does the positivity of respondents attitudes.
+For Jurassic World Domination, only 1 of the 5 participants watched the film where the average of the ratings were 3.3/5.
+Regarding Minions: The Rise of Gru, 3 of the 5 participants watched the film where the average of their ratings were 4.2/5. The relationship between  Age and the ratings of the film shows to be positively correlated meaning as the age increase, so does the positivity of respondents attitudes.
+
+The data imported cleaned and manipulated in this process sets a workable dataset to conduct data analysis. Potential questions to investigate is the possible relationship between the demographic variables and the collected attitudes towards the films such as work status and and amount of movies watched and education status and the overall attitude towards each movie. 
+This dataset has the potential to report accurate and generalizable insights if more resposes were collected, more demographic variables were asked (such as gender), and the statistics and qualities of each film (such as EOY gross, tickets sold, genre, distributor, etc)
+
