@@ -1,0 +1,124 @@
+Genesis Middleton
+Data 607
+Professor Catlin
+SP 2023
+
+## Introduction
+The coding in this document is being done to gain familiarity with manipulating 
+strings by first using a dataset obtained from fivethirtyeight 
+and retrieving majors using specific keywords, as well as using expressions to 
+identify patterns within strings as a form of filtering.
+
+
+## Import
+```{r}
+library(tidyverse)
+library(RCurl)
+
+x <- getURL("https://raw.githubusercontent.com/fivethirtyeight/data/master/college-majors/majors-list.csv")
+data <- read.csv(text = x)
+```
+
+
+## Question 1
+provide code that identifies the majors that contain either "DATA" or "STATISTICS"
+```{r}
+datastats_majors <- data %>%
+  filter(str_detect(data$Major, "DATA") | str_detect(data$Major, "STATISTICS"))
+
+datastats_majors
+```
+
+## Question 2
+Write code that transforms the data below:
+[1] "bell pepper"  "bilberry"     "blackberry"   "blood orange"
+[5] "blueberry"    "cantaloupe"   "chili pepper" "cloudberry"  
+[9] "elderberry"   "lime"         "lychee"       "mulberry"    
+[13] "olive"        "salal berry"
+Into a format like this:
+c("bell pepper", "bilberry", "blackberry", "blood orange", "blueberry", "cantaloupe", "chili pepper", "cloudberry", "elderberry", "lime", "lychee", "mulberry", "olive", "salal berry")
+The two exercises below are taken from R for Data Science, 14.3.5.1 in the on-line version:
+```{r}
+Fruits <- c('[1] "bell pepper"  "bilberry"     "blackberry"   "blood orange"
+[5] "blueberry"    "cantaloupe"   "chili pepper" "cloudberry"  
+[9] "elderberry"   "lime"         "lychee"       "mulberry"    
+[13] "olive"        "salal berry"')
+
+Fruits <- str_extract_all(Fruits, "\\w[a-z]+\\s?[a-z]+\\w")
+unlist(Fruits)
+```
+
+
+## Question 3
+3 Describe, in words, what these expressions will match:
+•	(.)\1\1
+•	"(.)(.)\\2\\1"
+•	(..)\1
+•	"(.).\\1.\\1"
+•	"(.)(.)(.).*\\3\\2\\1"
+
+(.)\1\1
+The expression (.)\1\1 will match any three charcters in a row that are the same.
+Here, the (.) indicates the first character that potential mathes should reference to.
+The following \1 represets the second charcter that should match the intial character, 
+and same goes for the third character where the \1 still indicates reference to the first
+character.
+
+This expression will match the strings "aaa", "bbb", "ccc" where each string follows
+the formula.
+
+
+"(.)(.)\\2\\1"
+The expression "(.)(.)\\2\\1" reveals that two characters are used in the first and second 
+position of a string that then requires the third and fourth characters to reflect its characters
+
+The strings "abba", "wzwz", "raak" all match the expression.
+
+
+(..)\1
+The expression (..)\1 matches any two characters followed by two more characters that rects the first group.
+some example of potential strings to match the expressions include:
+  "aabb", "jiij", "zyzy"
+
+
+"(.).\\1.\\1"
+The expression "(.).\\1.\\1" matches any string where the third and fith characters reflects the first caracter while 2nd and 4th characters are independent.
+To reiterat, the (.) represents the character the rest of the string will reference to in one way or another.
+the . represents independent characters that do not need to reference to any part of the string.
+Lastly, like the \1, the \\1 represents the the requirment of to mirror the first character. 
+Examples of this expression is "kakik", "arama", "wnwow"
+
+
+"(.)(.)(.).*\\3\\2\\1"
+This last expression "(.)(.)(.).*\\3\\2\\1" is used to match string whos first three characters are rever in the last three characters this random charcaters able to fill the middle.
+Strings that match this expressions conditions are "dreaerd", "braplarb", "aplrtlpa".
+
+## Question 4
+Construct regular expressions to match words that:
+Start and end with the same character.
+Contain a repeated pair of letters (e.g. "church" contains "ch" repeated twice.)
+Contain one letter repeated in at least three places (e.g. "eleven" contains three "e"s.)
+
+```{r}
+library(stringr)
+
+#Start and end with the same character.
+
+animal_strings <- c("reindeer", "bear", "wolf", "eagle")
+strext_animal <- str_extract_all(animal_strings, "^(.).*\\1$")
+strext_animal
+```
+```{r}
+#Contain a repeated pair of letters (e.g. "church" contains "ch" repeated twice.)
+strings_ext <- c("church", "table", "banana", "city" )
+strings_ext2 <- str_extract_all(strings_ext, ".*(..).*\\1.*")
+strings_ext2 
+```
+
+
+```{r}
+#Contain one letter repeated in at least three places (e.g. "eleven" contains three "e"s.)
+
+triple_char <- c("pepper", "backpack", "bubble", "duck")
+str_extract_all(triple_char, ".*(.).*\\1.*\\1.*")
+```
