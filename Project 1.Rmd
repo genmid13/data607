@@ -1,48 +1,63 @@
 ## Introduction'
-still in progress, rough draft
+A text file was given tat entailed a chess tournament results where the information has some structure. This R Markdown file shows a manipulation from the given text data into a workble dataframe that generates a .CSV file (that could for example be imported into a SQL database) with the following information for all of the players: Player’s Name, Player’s State, Total Number of Points, Player’s Pre-Rating, and Average Pre Chess Rating of Opponents
+
+
 ## Importing Text File
 ```{r}
 library(tidyverse)
 library(readr)
 setwd("~/Desktop/Data Acquisition & Management")
 data <- readLines("tournamentinfo.txt")
-```
-
-## Player’s Name, Player’s State, Total Number of Points, Player’s Pre-Rating, and Average Pre Chess Rating of Opponent
-```{r}
-data <- data[-c(1,2)]
-data <- data[-c(1,2)]
 head(data)
 ```
-# Extracting
+
+
+## Extracting Player’s Name, Player’s State, Total Number of Points, Player’s Pre-Rating, and Average Pre Chess Rating of Opponent
+The vectors created would describe each variable assigned for this project.
+The first and second rows of data were dropped to omit them from appearing in the vectors as they were the column names, where only the observations were included in the vectors.
+Regukar exrpessions were used to filter the targeted observations, unlisted, then transformed to their appropriate datatype (the default being character)
+
 ```{r}
+data <- data[-c(1,2)]
+data <- data[-c(1,2)]
 player_name <- unlist(str_extract_all(data, "(\\w+\\s){2,3}"))
 player_num <- as.numeric(unlist(str_extract_all(data, "\\s{3,5}\\d{1,2}\\s")))
 player_state <- unlist(str_extract_all(data, "\\s{2,3}[A-Z]{2}\\s{1}"))
 total_points <- as.integer(unlist(str_extract_all(data, "\\d{1}\\.\\d{1}")))
 pre_rating <- as.numeric(unlist(str_extract_all(data, "(?<=R:\\s{1,2})(\\d{3,4}\\s)|(\\d{3,4}(?=P\\d{1,2}\\s*-))")))
+
+#preview
+head(player_name)
+head(player_num)
+head(player_state)
+head(total_points)
+head(pre_rating)
 ```
 
 
-
+## Creating the DataFrame
+The dataframe was created using all the already created vectors prior to creating the Avg Pre Ratings of Opponents so that when the vector is created, the iterations within the list can then referred to the dataframe where all the variables are matched together.
 ```{r}
 chess_data <- data.frame(player_name, player_num, player_state, total_points, pre_rating)
 head(chess_data)
 ```
-#Opponent
 
 ```{r}
 opponent_avg_prerating <- str_extract_all(data, "(?<=(W|L|D)\\s{2,3})(\\d{1,2})")
 head(opponent_avg_prerating)
-
 ```
 
 
 
+## Retrieving the AVG Pre Ratigng of Opponents
+The following code connect the created vector to describe each player's opponents to the chess data frame to retrieve the average pre rating of each player's 7 opponents.
+The vector of each player's 7 opponents numbers were first created to then use a for loop, matching each iteration within the vector to the player's number in the created chess data frame to then retrieve their pre rating for it to then be averaged together with the other opponents each player played against
 ```{r}
-opponent_avg_pre_rating <- numeric(length(opponent_avg_prerating))
-for (i in 1:length(opponent_avg_prerating)) {
-  match_indices <- match(opponent_avg_prerating[[i]], chess_data$player_num)
+players_opponents <- str_extract_all(data, "(?<=(W|L|D)\\s{2,3})(\\d{1,2})")
+
+opponent_avg_pre_rating <- numeric(length(players_opponents))
+for (i in 1:length(players_opponents)) {
+  match_indices <- match(players_opponents[[i]], chess_data$player_num)
   total_pre_rating <- 0
   count <- 0
   for (j in match_indices) {
@@ -59,16 +74,18 @@ for (i in 1:length(opponent_avg_prerating)) {
 
 as.numeric(unlist(opponent_avg_pre_rating))
 opponent_avg_pre_rating <- opponent_avg_pre_rating[opponent_avg_pre_rating != 0.00]
-head(opponent_avg_pre_rating)
 
+
+#Adding the avg opponents pre rating into the data frame.
 chess_data$opponent_avg_pre_rating <-opponent_avg_pre_rating
-
+head(chess_data)
 
 ```
 
-
+## Converting to CSV
 ```{r}
 path <- getwd()
 write.csv(chess_data, file.path(path, "chess_data.csv"))
 ```
+
 
