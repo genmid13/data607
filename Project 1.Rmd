@@ -1,0 +1,74 @@
+## Introduction'
+still in progress, rough draft
+## Importing Text File
+```{r}
+library(tidyverse)
+library(readr)
+setwd("~/Desktop/Data Acquisition & Management")
+data <- readLines("tournamentinfo.txt")
+```
+
+## Player’s Name, Player’s State, Total Number of Points, Player’s Pre-Rating, and Average Pre Chess Rating of Opponent
+```{r}
+data <- data[-c(1,2)]
+data <- data[-c(1,2)]
+head(data)
+```
+# Extracting
+```{r}
+player_name <- unlist(str_extract_all(data, "(\\w+\\s){2,3}"))
+player_num <- as.numeric(unlist(str_extract_all(data, "\\s{3,5}\\d{1,2}\\s")))
+player_state <- unlist(str_extract_all(data, "\\s{2,3}[A-Z]{2}\\s{1}"))
+total_points <- as.integer(unlist(str_extract_all(data, "\\d{1}\\.\\d{1}")))
+pre_rating <- as.numeric(unlist(str_extract_all(data, "(?<=R:\\s{1,2})(\\d{3,4}\\s)|(\\d{3,4}(?=P\\d{1,2}\\s*-))")))
+```
+
+
+
+```{r}
+chess_data <- data.frame(player_name, player_num, player_state, total_points, pre_rating)
+head(chess_data)
+```
+#Opponent
+
+```{r}
+opponent_avg_prerating <- str_extract_all(data, "(?<=(W|L|D)\\s{2,3})(\\d{1,2})")
+head(opponent_avg_prerating)
+
+```
+
+
+
+```{r}
+opponent_avg_pre_rating <- numeric(length(opponent_avg_prerating))
+for (i in 1:length(opponent_avg_prerating)) {
+  match_indices <- match(opponent_avg_prerating[[i]], chess_data$player_num)
+  total_pre_rating <- 0
+  count <- 0
+  for (j in match_indices) {
+    if (!is.na(j)) {
+      pre_rating <- chess_data[j, ]$pre_rating
+      total_pre_rating <- total_pre_rating + pre_rating
+      count <- count + 1
+    }
+  }
+  if (count > 0) {
+    opponent_avg_pre_rating[i] <- total_pre_rating / count
+  }
+}
+
+as.numeric(unlist(opponent_avg_pre_rating))
+opponent_avg_pre_rating <- opponent_avg_pre_rating[opponent_avg_pre_rating != 0.00]
+head(opponent_avg_pre_rating)
+
+chess_data$opponent_avg_pre_rating <-opponent_avg_pre_rating
+
+
+```
+
+
+```{r}
+path <- getwd()
+write.csv(chess_data, file.path(path, "chess_data.csv"))
+```
+
