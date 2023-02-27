@@ -1,0 +1,51 @@
+## Introduction 
+The assignment instructs of creatig a dataset in a wide format (reflecting a given chart) to then conduct a comparison analysis.
+
+## Import
+```{r}
+library(tidyverse)
+library(janitor)
+```
+
+
+## Creating the Data Frame
+A dataframe was created containing information about flight arrival times for two airlines, Alaska and AM West.
+The data frame has 7 columns: Airline, Status, with 5 of the columns describing the different cities (Los Angeles, Phoenix, San Diego, San Francisco, and Seattle). The Airline column specifies which airline the flight belongs to, the Status column indicates whether the flight was on time or delayed, and the other columns indicate the arrival time for each city.
+After creating the data frame, the code writes it to a CSV file called "airline-destination.csv".
+
+```{r}
+data <- data.frame(
+  "Airline" = c("ALASKA", "ALASKA", "AM WEST", "AM WEST"),
+  "Status" = c("on time", "delayed", "on time", "delayed"),
+  "Los Angeles" = c(497, 62, 694, 117),
+  "Phoenix" = c(221, 12, 4840, 415),
+  "San Diego" = c(212, 20, 383, 65),
+  "San Francisco" = c(503, 102, 320, 129),
+  "Seattle" = c(1841, 305, 201, 61)
+)
+data 
+
+write_csv(data, "airline-destination.csv")
+
+```
+
+## Reshaping wide -> long format
+The dataframe is reshaped from a wide format to a long format, where each row represents a single observation of an airline's arrival performance for a particular city.
+```{r}
+data_long <- pivot_longer(data, cols = -c(Airline, Status), names_to = "City", values_to = "Value")
+data_long
+
+```
+
+
+
+##Perform analysis to compare the arrival delays for the two airlines.
+The long formatted data frame was then used to filter the data to include only delayed flights, and then used tp create a bar chart to compare the arrival delays for each airline
+```{r}
+data_long %>%
+  filter(Status == "delayed") %>%
+  ggplot(aes(x = Airline, y = Value, fill = Status)) +
+  geom_bar(position = "dodge", stat = "identity")
+
+```
+## Conclusion/ Results
