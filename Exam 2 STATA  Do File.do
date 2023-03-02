@@ -2,6 +2,7 @@ clear
 use "/Users/genesismiddleton/Desktop/Exam2 Data.dta"
 set more off
 
+*Checking and correcting any missing variables
 tab vcr_p1k
 tab vcr_p1k, nol
 tab vcr_p1k, missing
@@ -20,13 +21,11 @@ tab emp_ft
 tab emp_ft, nol
 tab emp_ft, missing
 
-*Descriptive
+*Descriptive Statistics
 su vcrp1k
 tab Race_All
 tab Educ_All
 tab emp_ft
-
-
 
 
 *Chi-sq
