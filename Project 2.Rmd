@@ -1,0 +1,156 @@
+## Introduction 
+The assignment for this project entailed of retrieving three wide datasets posted previously by the class in a discussion board and conduct the analysis the poster inteded for their dataset. 
+
+For this project, I am using Alice Ding's data on the test performance of students throughout 3 terms. I am also using a sample dataset retirieved from Coco Donovan where the dataset needed to be manually created due to the insufficient source of the article used. The table used in this analysis replicates the table posted in the discussion board. Finally, I am also using adata set obtained from Nick Climaco on the populaiton growth of Mexico, the Us, and Canda from the yeras 1994-2000.
+
+## Importing
+```{r}
+library(tidyverse)
+library(RCurl)
+
+
+#Alice Ding's DB
+students_data <- getURL("https://gist.githubusercontent.com/Kimmirikwa/b69d0ea134820ea52f8481991ffae93e/raw/4db7b1698035ee29885d10e1a59bd902716ae168/student_results.csv")
+students_data <- read_csv(students_data)
+
+#Nick CLimaco
+nafta_data <- getURL("https://raw.githubusercontent.com/Nick-Climaco/Rdataset/main/nafta_countries.csv")
+nafta_data <- read_csv(nafta_data)
+
+```
+##Religion DataFramee
+This date frame created is referencing the sample data set classmate Coco Donovan posted in week 5 discussion board. The described sample was retrieved from a site that did not link to the complete dataset so therefore the data frame created is one that only reflect 5 cases of regious classifications
+
+```{r}
+#creating the untidy data posted in the DB
+religioninc_data <- data.frame(
+  "Religion" = c("Agnostic", "Atheist", "Budhdist", "Catholic", "refused"),
+  "<10k" = c(27, 12, 27, 418, 15),
+  "10-20k" = c(34, 27, 21, 617, 14),
+  "20-30k" = c(60, 37, 30, 732, 15),
+  "30-40k" = c(81, 52, 34, 670, 11),
+  "40-50k" = c(76, 35, 33, 638, 10),
+    "50-75k" = c(137, 70, 58, 1116, 35),
+  "75-100k" = c(122, 73, 62, 949, 21),
+  "100-150k" = c(109, 59, 39, 792, 17),
+  ">150k" = c(84, 74, 53, 633, 18),
+  "refused" = c(96, 76, 54, 1489, 116)
+)
+write.csv(religioninc_data, "religion-income.csv")
+religioninc_data
+
+```
+The religion-income data set will then be tidied by converting the original created table into a long format, where variables such as Religion and Income brackets are formed, as well as the frequency of respondents falling into each category
+```{r}
+
+religioninc_long <- pivot_longer(religioninc_data, cols = -Religion, names_to = "Income_Bracket", values_to = "Respondents Frequency") %>%
+  mutate(Income_Bracket = ifelse(Income_Bracket == "X.10k", "<10k", Income_Bracket)) %>%
+  mutate(Income_Bracket = ifelse(Income_Bracket == "X10.20k", "10-20k", Income_Bracket)) %>%
+  mutate(Income_Bracket = ifelse(Income_Bracket == "X20.30k", "20-30k", Income_Bracket)) %>%
+  mutate(Income_Bracket = ifelse(Income_Bracket == "X30.40k", "30-40k", Income_Bracket)) %>%
+  mutate(Income_Bracket = ifelse(Income_Bracket == "X40.50k", "40-50k", Income_Bracket)) %>%
+  mutate(Income_Bracket = ifelse(Income_Bracket == "X50.75k", "50-75k", Income_Bracket)) %>%
+  mutate(Income_Bracket = ifelse(Income_Bracket == "X75.100k", "75-100k", Income_Bracket)) %>%
+  mutate(Income_Bracket = ifelse(Income_Bracket == "X100.150k", "100-150k", Income_Bracket)) %>%
+  mutate(Income_Bracket = ifelse(Income_Bracket == "X.150k", ">150K", Income_Bracket)) 
+religioninc_long
+
+```
+## Analysis of Religion-Income Datataset
+For the purpose of this analysis, Coco suggested the way he would approach this analysis is by grouping the data by religion to see what the religious makeup of all respondents was by percentages. A visual analysis with parallel bar charts will be created to get an idea of which religion has the wealthiest followers (based solely on the results of this data).
+
+```{r}
+religioninc_long %>%
+  group_by(Religion) %>%
+  summarise(religioninc_long, Respondents_Percentage = (`Respondents Frequency`/sum(`Respondents Frequency`))*100) %>%
+  ggplot(aes(Religion, Respondents_Percentage, fill=Income_Bracket)) +
+  geom_col(stat = "identity")
+
+```
+## Results 
+It is shown that the most prevalent religion among the respondents is Catholicism while the least prevalent is Buddhism, excluding those who refused to answer. In the same chart, its is also shown that the most common income bracket among catholics are 50-75k and 75-100k. It should be noted, however, that the brackets are inconsistents in the data collection where for all of the bracket groups under 50K range only 10k while after 50k has a 25k range, allowiing to account for more respondents.
+
+## Student's Test Performance
+This next data set was obtained through the discussion board response of Alice Ding where the data entails of some demographic factors of the student and how they performed on each test across 3 terms. To tidy the data, the column "sex and age" will be seperated into two columns to represent each variable. The columns "term 1", "term 2", and "term 3" will be combined to one column, "Terms" where another column will be created to represents its values, "Scores
+```{r}
+students_data
+
+student_tidy <- students_data %>%
+separate("sex and age", c("Sex", "Age"), sep = "_")%>%
+  mutate(Sex = ifelse(Sex == "f", "Female", Sex)) %>%
+  mutate(Sex = ifelse(Sex == "m", "Male", Sex)) %>%
+  pivot_longer(cols = c("term 1", "term 2", "term 3"), names_to = "Terms", values_to = "Scores") 
+
+student_tidy$Age <- as.numeric(student_tidy$Age)
+student_tidy$Scores <- as.numeric(student_tidy$Scores)
+student_tidy
+
+```
+## Analysis of Student Test Performances
+In terms of analyzing Alice's data, she suggested an approach to this analysis would be finding the  average test score for each student or average test score overall. It could also be counted how many students are of each sex and find the average age as well.
+
+```{r}
+#Avg test score for each student
+avg_scores <- student_tidy %>%
+  group_by(name) %>%
+  summarise(avg_score = mean(Scores)) 
+avg_scores
+
+  ggplot(avg_scores, aes(name, avg_score)) +
+  geom_bar(stat="identity", fill="dark green") +
+  labs(x = "Students", y = "Average Score", title = "Average Test Scores by Student")
+
+```
+  
+```{r} 
+#Avg test score for each sex
+  #fix later
+avgscores_bysex <- student_tidy %>% 
+  group_by(Sex) %>%
+  summarise(avg_score = mean(Scores), avg_age = mean(Age))
+avgscores_bysex
+
+ggplot(avgscores_bysex, aes(Sex, avg_score, fill=Sex)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Sex of Students", y = "Score", title = "Number of Students by Sex")
+
+
+
+```
+## Results
+In the charts above, it is show that from the 5 students test perfomance recorded, overall Linda scored the best, scoring 85.67%, whie Mary performed the worst, scoring 66.17%. While the person who scored the best is a girl, it is shown that the boys overall performed better, averaging at 81.75 and were younger (averaging to 11.5), while the girls avereaged a score of 75.06 and on average, aged 13 years old.
+
+
+
+## Population Growth Over Time
+This last data set was retrieved from classmate Nick Climaco discussion board response where it entails of the population growth from 1994-2000 of Mexico, the US, and Canada. To tidy this data, the table will be transformed into a long format t compress te years into a single columns and the population into another. 
+```{r}
+nafta_data
+nafta_long <- nafta_data %>%
+  pivot_longer(cols = -c("ï»¿id", "Country"), names_to = "Year", values_to = "Population")
+colnames(nafta_long)[1] <- "ID"
+
+nafta_long
+```
+
+
+## Analysis of Population Growth Over Time
+In his discussion board response, Nick recommended that for future analysis, the population growth rate for each year could be calculated and compared to the other two countries in the dataset.
+
+```{r}
+pop_growth <- nafta_long %>%
+ group_by(Country) %>%
+  arrange(Year) %>%
+  mutate(Population_Growth_Rate = ((Population - lag(Population))/lag(Population)) * 100) %>%
+  na.omit()
+pop_growth
+
+pop_growth %>%
+ggplot(aes(x = Year, y = Population_Growth_Rate, color = Country, linetype = "-")) +
+  geom_point() + 
+  labs(x = "Year", y = "Population Growth Rate", title = "Population Growth Rate from 1994-1995")
+
+```
+## Results
+Referring to the chart above, it is shown that in the years of 1994-1995, Mexico's population has been decreasing at a faster and conistent rate while for the US, its poppulation has been consolidating slightly downward. Canada on the other hand experienced a sharp decline in their population from 1997-1998 but seemed to be reocovering back to its normanl rates by the end of 2000.
+
