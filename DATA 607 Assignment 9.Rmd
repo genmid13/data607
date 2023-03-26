@@ -1,0 +1,69 @@
+
+## Intro
+The data analyzed in this assignment was movie reviews critiques and their critiques, 
+pulled from the New York Times API. The task included accessing the chosen information 
+contained in the API for it to then bwe read in the JSON data, and transformed into an 
+R DataFrame.
+
+## Importing libraries and retrieving the Data
+```{r}
+library(tidyverse)
+library(httr)
+library(rvest)
+library(jsonlite)
+library(knitr)
+
+
+response <- GET("https://api.nytimes.com/svc/movies/v2/reviews/search.json?api-key=yNHI7wXwGGegzABJslljTcIvEZuAHVqp")
+content <- content(response, "text")
+data <- fromJSON(content)
+```
+
+## Creating the Dataframe
+```{r}
+movie_rev <- data.frame(data$results)
+movie_rev$link <- movie_rev$link$url
+movie_rev <- subset(movie_rev, select = c(-multimedia, -opening_date, -date_updated))
+
+movie_rev$critics_pick <- ifelse(movie_rev$critics_pick == 1, "yes", "no")
+knitr::kable(movie_rev, col.names = c("Movie Titles", "MPAA Ratign", "Critics Pick", "Critics", "Review Headline", "Review Summary (Short)", "Publication Date", "Link"))
+```
+
+## Analysis
+This analysis dives into how each critic critics their reviewed movies. The dataset
+was filtered to only analyze those who critiqued more than 1 movie to recognize any
+pattern that may arise.
+```{r}
+ repetitive_critcs <- movie_rev %>%
+     arrange(byline) %>%
+     filter(duplicated(byline) | duplicated(byline, fromLast = TRUE))
+```
+
+
+```{r}
+critiques_count <- repetitive_critcs %>%
+  group_by(byline, critics_pick) %>%
+  summarize(count = n())
+```
+
+##Visualization
+```{r}
+ggplot(critiques_count, aes(byline, count, fill = critics_pick)) +
+  geom_col() +
+  scale_fill_manual(values = c("#C80404", "#C804B2")) +
+  labs(x = "Critics", y = "Count", fill = "Critic Pick", title ="Diversity in Critics Recommendations") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+        plot.title = element_text(hjust = 0.5))
+```
+```{r}
+repetitive_critcs %>%
+  filter(byline == "Manohla Dargis")
+```
+
+##Conclusion
+As shown in the visualization, we see that most critics who analyze movies are 
+unannimous in their decision as to whether they would recommenend said movie. The only critic to 
+have some diversity within their answers is Manohla Dargis where from the 2 movies 
+she reviewed, she recommended 1 (Tori and Lokita) and not the other (John Wick: Chapter 4.
+
