@@ -1,0 +1,63 @@
+---
+output:
+  html_notebook: default
+  html_document: default
+---
+
+## Intro Spotify's Recommendation System
+Recommendation systems are a type of information filtering systems that are designed to provide personalized suggestions to users based on their preferences, historical behavior, and other contextual data. They are commonly used in various industries, including e-commerce, media, and social networks, to help users discover new items, products, or content that they might be interested in. A good recommendation system is one that continues to provide for the everchanging interests of its consumers. And because it can be done through the constant collection of user data, it is a reliable system that encourages consumption.
+
+In looking into the application of Spotify's recommendation system, we are presented with one of the most advanced in the music streaming industry, combining several approaches, including collaborative filtering, content-based filtering, and natural language processing. All to provide accurate recommendations
+
+Spotify collects a wide range of data about its users (i.e., their listening history, the songs they have liked or disliked, the artists they follow) and contextual factors (i.e., time of day, the user's location, the weather) to provide the most accurate recommendations tailoring to the users interests AND emotions. With that information, playlists are then currated every week that fits the users aggregated data.
+
+
+##Spotify's Target Users
+
+Spotify's target users are primarily music and podcast enthusiasts who are looking for a convenient and personalized way to stream and discover new content. The platform is popular among individuals of all ages, but its core demographic is millennials and Gen Z users(18-34 yrs old).
+
+We can infer that Spotify's target audience can be broken down into the following categories:
+
+Music listeners: Spotify's primary target audience is music listeners who want access to a large library of songs, playlists, and personalized recommendations. This group includes people who listen to music for entertainment, relaxation, and motivation.
+
+Podcast listeners: Spotify has also made a significant push into the podcast market and is targeting listeners who enjoy this format for entertainment, education, and news.
+
+Tech-savvy users: Spotify's target audience also includes tech-savvy individuals who are comfortable using digital platforms to consume media and are looking for a convenient way to access music and podcasts.
+
+Social media users: Spotify's social media integration allows users to share and discover music and podcasts with their friends and followers, making it appealing to those who are active on social media.
+
+## Key Goals of Spotify's Reommendation System
+The key goals of Spotify's recommendation system are to enhance user engagement, increase retention, and drive customer satisfaction by providing personalized and relevant music and podcast recommendations.
+
+Enhance User Engagement: Spotify's recommendation system aims to increase user engagement by suggesting songs and podcasts that are relevant to the user's preferences and listening habits. By providing personalized recommendations, Spotify can keep users engaged and interested in the platform.
+
+Increase Retention: Retention is another key goal of Spotify's recommendation system. By suggesting content that users are interested in, Spotify can encourage users to remain on the platform and continue listening to music and podcasts.
+
+Drive Customer Satisfaction: By providing accurate and relevant recommendations, Spotify can increase customer satisfaction and improve the overall user experience. When users feel that they are being provided with relevant content, they are more likely to continue using the platform and recommend it to others.
+
+Increase Revenue: Spotify's recommendation system also aims to increase revenue by encouraging users to upgrade to premium subscription plans. Personalized recommendations can entice users to upgrade to plans that offer additional features, such as ad-free listening, offline playback, and higher-quality audio.
+
+
+## Reverse Engenierring
+After looking over some articles discussing the algorithm of Spotify's recommendation system, i is shown that the structure of Spotify's system is built through...
+
+Collaborative Filtering: This technique is used to identify users who have similar listening habits and preferences. The system then uses this data to recommend music that these users are listening to and that the user in question may also enjoy.
+
+Natural Language Processing (NLP): Spotify's recommendation system also uses NLP to analyze song lyrics and metadata to understand the meaning and context of the music. This helps the system to recommend music that has similar themes or topics.
+
+Audio Analysis: Spotify uses audio analysis to extract information about the tempo, energy, and other characteristics of each song. This information is then used to recommend music that has similar characteristics and is likely to appeal to the user.
+
+User Behavior: Spotify's recommendation system also analyzes a user's listening behavior, such as the songs they skip, the playlists they create, and the artists they follow. This data is used to improve the accuracy of recommendations and provide personalized suggestions.
+
+External Data: Spotify also incorporates external data, such as user reviews and other sources of music-related information, to further refine the recommendation process
+
+
+## Recommendations for the Recommendation System: Help achieving Spotify's Goals
+From my own perspective as a 7+ year Spotify user, the playlists recommended never suited the music i was interested in. The music recommended was of similar genres and usually within that sphere of similar artists users listen to. What i recommend for Spotify's recommendation system to consider is the vocal tones and  instruments used. The qualities that the recommendation system is being based of are all exterior to the composition of the song itself, but it is in this composition that attracts the user.
+
+## Sources
+"Building a Song Recommendation System with Spotify" by Eric Chang 2021
+https://towardsdatascience.com/part-iii-building-a-song-recommendation-system-with-spotify-cf76b52705e7
+
+"How Spotify Recommends Your New Favorite Artist" by Clark Boyd 2019
+https://towardsdatascience.com/how-spotify-recommends-your-new-favorite-artist-8c1850512af0
