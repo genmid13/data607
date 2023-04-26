@@ -1,0 +1,19 @@
+## Intro
+Using the information you collected on movie ratings, implement a Global Baseline Estimate recommendation system in R.  
+Most recommender systems use personalized algorithms like “content management” and “item-item collaborative filtering.” Sometimes non-personalized recommenders are also useful or necessary. One of the best non-personalized recommender system algorithms is the “Global Baseline Estimate.
+The job here is to use the survey data collected and write the R code that makes a movie recommendation using the Global Baseline Estimate algorithm.  Please see the attached spreadsheet for implementation details.
+
+
+## Loading Packages
+```{r}
+library(RPostgreSQL)
+library(RPostgres)
+library(DBI)
+library(dbplyr)
+library(tidyverse)
+
+```
+
+
+
+## Connecting to SQL Database
