@@ -1,0 +1,91 @@
+## Intro
+
+```{r}
+library(tidytext)
+library(tidyverse)
+```
+## Loading the Corpus
+```{r}
+ham_dir <- "/Users/genesismiddleton/Desktop/Data Acquisition & Management/Project 4/easy_ham"
+spam_dir <- "/Users/genesismiddleton/Desktop/Data Acquisition & Management/Project 4/spam"
+ham_files <- list.files(ham_dir)
+spam_files <- list.files(spam_dir)
+```
+
+
+## Emails -> Dataframe
+```{r}
+#transforming "ham" emails into a tibble
+ham <- tibble()
+for (file in ham_files) {
+  f1 <- paste(ham_dir, '/', file, sep="")
+  lines <- readLines(f1)
+  first_blank <- which(lines == "")[1] # find the index of the first blank line
+  if (!is.na(first_blank)) {
+    content <- lines[(first_blank+1):length(lines)] # use only the lines after the first blank line
+  } else {
+    content <- lines # if there are no blank lines, use all the lines
+  }
+  x <- tibble(content = content, label = "ham", file = file) # add a "file" column
+  ham <- rbind(ham, x)
+}
+
+
+#transforming "spam" emails into a tibble
+spam <- tibble()
+for (file in spam_files) {
+  f1 <- paste(spam_dir, '/', file, sep="")
+  lines <- readLines(f1)
+  first_blank <- which(lines == "")[1] # find the index of the first blank line
+  if (!is.na(first_blank)) {
+    content <- lines[(first_blank+1):length(lines)] # use only the lines after the first blank line
+  } else {
+    content <- lines # if there are no blank lines, use all the lines
+  }
+  x <- tibble(content = content, label = "spam", file = file) # add a "file" column
+  spam <- rbind(spam, x)
+}
+```
+
+
+```{r}
+#binding into 1 tibble
+all_emails <- rbind(ham, spam)
+
+# Create a tibble to store the unique file names and their assigned numbers
+file_numbers <- tibble(file = unique(all_emails$file)) %>% 
+  mutate(file_number = row_number())
+
+# Add a new column to all_emails with the assigned file number
+all_emails <- all_emails %>% 
+  left_join(file_numbers, by = "file") %>% 
+  unnest_tokens(word, content) %>%
+  filter(!str_detect(word, "(\\d)|(_)"))
+```
+
+```{r}
+all_emails <- select(all_emails, ncol(all_emails), everything())
+
+```
+
+## Identifying Most Common Words in Spam and Ham
+```{r}
+
+ham_word_freq <- all_emails %>%
+  filter(label == "ham") %>%
+  select(word) %>%
+  count(word) %>%
+  arrange(desc(n))
+ham_word_freq
+
+spam_word_freq <- all_emails %>%
+  filter(label == "spam") %>%
+  select(word) %>%
+  count(word) %>%
+  arrange(desc(n))
+spam_word_freq
+```
+
+## NEXT STEP IS TO REMOVE THE STOP WORDS
+
+
