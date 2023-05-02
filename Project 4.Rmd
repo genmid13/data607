@@ -3,7 +3,9 @@
 ```{r}
 library(tidytext)
 library(tidyverse)
+library(tm)
 ```
+
 ## Loading the Corpus
 ```{r}
 ham_dir <- "/Users/genesismiddleton/Desktop/Data Acquisition & Management/Project 4/easy_ham"
@@ -40,16 +42,16 @@ for (file in spam_files) {
   if (!is.na(first_blank)) {
     content <- lines[(first_blank+1):length(lines)] # use only the lines after the first blank line
   } else {
-    content <- lines # if there are no blank lines, use all the lines
+    content <- lines
   }
   x <- tibble(content = content, label = "spam", file = file) # add a "file" column
   spam <- rbind(spam, x)
 }
 ```
 
-
 ```{r}
 #binding into 1 tibble
+
 all_emails <- rbind(ham, spam)
 
 # Create a tibble to store the unique file names and their assigned numbers
@@ -60,32 +62,156 @@ file_numbers <- tibble(file = unique(all_emails$file)) %>%
 all_emails <- all_emails %>% 
   left_join(file_numbers, by = "file") %>% 
   unnest_tokens(word, content) %>%
-  filter(!str_detect(word, "(\\d)|(_)"))
-```
+  filter(!str_detect(word, "(\\d)|(_)")) %>% 
+  anti_join(stop_words)
 
-```{r}
+all_emails <- data.frame(all_emails)
 all_emails <- select(all_emails, ncol(all_emails), everything())
+all_emails <- all_emails %>%
+  select(-file)
+
+all_emails <- all_emails %>%
+  anti_join(stop_words)
+
+html_words <- c("font", "td", "br","size","tr","width","http","color","align","height","nbsp","center","table","border","arial","option","img","src","style","href", "alt", "iiq.us", "receive", "left", "form", "tbody", "title", "valign", "information", "head", "tahoma", "li", "report", "input", "body", "mv", "cellspacing", "cellpadding", "list", "colspan", "click", "class","gif", "helvetica", "ffffff", "images", "email", "div", "top", "blockquote", "margin", "mail", "verdana","bgcolor", "type", "content", "html", "span", "text", "free", "serif", "sans", "rpm", "listinfo", "spamassassin", "exmh", "url", "https")
+
+all_emails <- all_emails[!(all_emails$word %in% html_words),]
+all_emails
+```
+
+
+```{r}
+all_emails <- all_emails %>%
+  group_by(label) %>%
+  add_count(file_number, word, sort = TRUE) %>%
+  ungroup() %>%
+  distinct(word, label, .keep_all = TRUE)
+
+all_emails
+```
+
+```{r}
+all_emails <- all_emails %>%
+  group_by(label) %>%
+  summarize(word, file_number, n, total = sum(n)) %>%
+  mutate(percentage = (n/total)) 
+all_emails 
+```
+
+```{r}
+all_emails %>%
+  filter(label == "ham") %>%
+  arrange(desc(n)) %>%
+  head(10)
+
+all_emails %>%
+  filter(label == "spam") %>%
+  arrange(desc(n)) %>%
+  head(10)
+```
+
+
+```{r}
+all_emails %>%
+  filter(label == "spam")
+
+all_emails %>%
+  filter(label == "ham")
+```
+
+
+```{r}
+get_sentiments("afinn")
+
+ham_sentiment <- all_emails %>%
+   filter(label == "ham")
+
+ham_sentiment %>%
+  inner_join(get_sentiments("afinn")) %>%
+  group_by(word) %>%
+  summarise(label, sentiment = sum(value), file_number, n, total, percentage) %>%
+  arrange(sentiment)
+
+spam_sentiment <- all_emails %>%
+   filter(label == "spam")
+
+spam_sentiment %>%
+  inner_join(get_sentiments("afinn")) %>%
+  group_by(word) %>%
+  summarise(label, sentiment = sum(value), file_number, n, total, percentage) %>%
+  arrange(sentiment)
+
+all_emails %>%
+inner_join(get_sentiments("afinn")) %>%
+  group_by(label) %>%
+  summarise(sentiment = sum(value)) %>%
+  arrange(sentiment)
 
 ```
 
-## Identifying Most Common Words in Spam and Ham
+
+## Training and Testing
+```{r}
+set.seed(160)
+
+h <- runif(nrow(all_emails))
+
+all_emails_r <- all_emails[order(h), ]
+all_emails_r
+
+train <- all_emails_r[1:70, ]
+test <- all_emails_r[71:100, ]
+```
+
 ```{r}
 
-ham_word_freq <- all_emails %>%
-  filter(label == "ham") %>%
-  select(word) %>%
-  count(word) %>%
-  arrange(desc(n))
-ham_word_freq
 
-spam_word_freq <- all_emails %>%
-  filter(label == "spam") %>%
-  select(word) %>%
-  count(word) %>%
-  arrange(desc(n))
-spam_word_freq
+# Create corpus for training and test data
+train_word_corpus <- Corpus(VectorSource(train$word))
+test_word_corpus <- Corpus(VectorSource(test$word))
+
+train_clean_corpus <- tm_map(train_word_corpus ,removeNumbers)
+test_clean_corpus <- tm_map(test_word_corpus, removeNumbers)
+
+train_clean_corpus <- tm_map(train_clean_corpus, removePunctuation)
+test_clean_corpus <- tm_map(test_clean_corpus, removePunctuation)
+
+train_clean_corpus <- tm_map(train_clean_corpus, removeWords, stopwords())
+test_clean_corpus  <- tm_map(test_clean_corpus, removeWords, stopwords())
+
+train_clean_corpus<- tm_map(train_clean_corpus, stripWhitespace)
+test_clean_corpus<- tm_map(test_clean_corpus, stripWhitespace)
+
+train_word_dtm <- DocumentTermMatrix(train_clean_corpus)
+test_word_dtm <- DocumentTermMatrix(test_clean_corpus)
+
 ```
 
-## NEXT STEP IS TO REMOVE THE STOP WORDS
+```{r}
+convert_count <- function(x) {
+  y <- ifelse(x > 0, 1, 0)
+  y <- factor(y, levels=c(0, 1), labels=c("No", "Yes"))
+  y
+}
 
+train_x <- apply(train_word_dtm, 2, convert_count)
+test_x <- apply(test_word_dtm, 2, convert_count)
+
+library(e1071)
+# Get the number of elements in train$label
+n <- length(train$label)
+
+
+train_x <- train_x[1:n,]
+train$label <- train$label[1:n]
+
+# classification of email
+classifier <- naiveBayes(train_x, train$label)
+```
+
+```{r}
+test_pred <- predict(classifier, newdata=test_x)
+
+table(test_pred, test$label)
+```
 
