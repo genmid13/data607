@@ -1,0 +1,243 @@
+```{r}
+library(tidyverse)
+library(tidytext) #text mining
+library(rvest) #web scrape
+library(httr) #web scrape
+library(wordcloud) #word cloud visualization
+
+
+```
+
+## Extracting Lyrics from Genius
+The lyrics extracted from Genius coincide to the songs prevalent in Spotify's
+most-streamed songs in the U.S. for 2022.
+The extracted lyrics are then broken down into each section and assigned its own vector. This is to help train the later model in generating lyrics to specific sections of  a song
+
+
+As It Was structure:
+Intro
+Verse 1
+Chorus
+Verse 2
+Chorus
+Bridge 
+Outro
+```{r}
+hstyles_extracted <- read_html("https://genius.com/Harry-styles-as-it-was-lyrics")
+hstyles_lyrics <- html_nodes(hstyles_extracted, ".Dzxov") %>% html_text() 
+hstyles_lyrics <- paste(hstyles_lyrics[1], hstyles_lyrics[2])
+hstyles_lyrics_clean <- str_remove_all(hstyles_lyrics, "\\[.*?\\]")
+hstyles_lyrics_clean <-  gsub("([A-Z])", " \\1", hstyles_lyrics_clean)
+#hstyles_lyrics <-  gsub("([A-Z])", "\n\\1", hstyles_lyrics)
+
+hstyles_intro <- str_extract(hstyles_lyrics, "\\[Intro\\].*?\\[")
+hstyles_intro <-  gsub("([A-Z])", "\n\\1", hstyles_intro)
+
+
+hstyles_verse1 <- str_extract(hstyles_lyrics, "\\[Verse 1\\].*?(?=\\[)")
+hstyles_verse1 <-  gsub("([A-Z])", "\n\\1", hstyles_verse1)
+
+hstyles_chorus <- str_extract(hstyles_lyrics, "\\[Chorus\\].*?(?=\\[)")
+hstyles_chorus <-  gsub("([A-Z])", "\n\\1", hstyles_chorus)
+
+hstyles_verse2 <- str_extract(hstyles_lyrics, "\\[Verse 2\\].*?(?=\\[)")
+hstyles_verse2 <-  gsub("([A-Z])", "\n\\1", hstyles_verse2)
+cat(hstyles_verse2)
+
+hstyles_bridge <- str_extract(hstyles_lyrics, "\\[Bridge\\].*?(?=\\[)")
+hstyles_bridge <-  gsub("([A-Z])", "\n\\1", hstyles_bridge)
+
+hstyles_outro <- str_extract(hstyles_lyrics, "\\[Outro\\].*")
+hstyles_outro <-  gsub("([A-Z])", "\n\\1", hstyles_outro)
+```
+
+```{r}
+#recombining the sections so now each section has its own index
+#the recombined lyrics does not reflect the actual structure of the original as each section is only shown once. (chorus is not repeated)
+
+hstlyles_breakdown <- c(hstyles_intro, hstyles_verse1, hstyles_chorus, hstyles_verse2, hstyles_bridge, hstyles_outro)
+```
+
+
+Heat Waves structure:
+Intro
+Chorus
+Verse 1
+Chorus
+Verse 2
+Chorus
+Bridge
+Chorus
+Outro
+```{r}
+ganimals_extracted <- read_html("https://genius.com/Glass-animals-heat-waves-lyrics")
+ganimals_lyrics <- html_nodes(ganimals_extracted, ".Dzxov") %>% html_text() 
+ganimals_lyrics <- paste(ganimals_lyrics[1], ganimals_lyrics[2], ganimals_lyrics[3])
+ganimals_lyrics_clean <- str_remove_all(ganimals_lyrics, "\\[.*?\\]")
+ganimals_lyrics_clean <-  gsub("([A-HJ-Z])", "\n\\1", ganimals_lyrics_clean)
+
+ganimals_intro <- str_extract(ganimals_lyrics, "\\[Intro\\].*?\\[")
+ganimals_intro <-  gsub("([A-Z])", "\n\\1", ganimals_intro)
+
+
+ganimals_verse1 <- str_extract(ganimals_lyrics, "\\[Verse 1\\].*?(?=\\[)")
+ganimals_verse1 <-  gsub("([A-Z])", "\n\\1", ganimals_verse1)
+
+ganimals_chorus <- str_extract(ganimals_lyrics, "\\[Chorus\\].*?(?=\\[)")
+ganimals_chorus <-  gsub("([A-Z])", "\n\\1", ganimals_chorus)
+
+ganimals_verse2 <- str_extract(ganimals_lyrics, "\\[Verse 2\\].*?(?=\\[)")
+ganimals_verse2 <-  gsub("([A-Z])", "\n\\1", ganimals_verse2)
+
+ganimals_bridge <- str_extract(ganimals_lyrics, "\\[Bridge\\].*?(?=\\[)")
+ganimals_bridge <-  gsub("([A-Z])", "\n\\1", ganimals_bridge)
+
+ganimals_outro <- str_extract(ganimals_lyrics, "\\[Outro\\].*")
+ganimals_outro <-  gsub("([A-Z])", "\n\\1", ganimals_outro)
+
+
+```
+
+```{r}
+ganimals_breakdown <- c(ganimals_intro, ganimals_verse1, ganimals_chorus, ganimals_verse2, ganimals_bridge, ganimals_outro)
+
+```
+
+
+Dark Red structure:
+Intro
+Verse 1
+Chorus
+Post-Chorus
+Verse 2
+Chorus
+Post-Chorus
+Bridge
+Instrumental Break
+Outro
+```{r}
+slacy_extracted <- read_html("https://genius.com/Steve-lacy-bad-habit-lyrics")
+slacy_lyrics <- html_nodes(slacy_extracted, ".Dzxov") %>% html_text() 
+slacy_lyrics <- paste(slacy_lyrics[1], slacy_lyrics[2], slacy_lyrics[3])
+slacy_lyrics_clean <-  gsub("([a-z])([A-Z])", "\\1\n\\2", slacy_lyrics)
+slacy_lyrics_clean <- str_remove_all(slacy_lyrics_clean, "\\[.*?\\]")
+
+slacy_intro <- str_extract(slacy_lyrics, "\\[Intro.*?\\].*?\\[")
+slacy_intro <-  gsub("([A-Z])", "\n\\1", slacy_intro)
+
+slacy_verse1 <- str_extract(slacy_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
+slacy_verse1 <-  gsub("([A-Z])", "\n\\1", slacy_verse1)
+
+slacy_chorus <- str_extract(slacy_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
+slacy_chorus <-  gsub("([A-Z])", "\n\\1", slacy_chorus)
+
+slacy_postchorus <-  str_extract(slacy_lyrics, "\\[Post-Chorus.*?\\].*?(?=\\[)")
+slacy_postchorus <-  gsub("([A-Z])", "\n\\1", slacy_postchorus)
+
+slacy_verse2 <- str_extract(slacy_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
+slacy_verse2 <-  gsub("([A-Z])", "\n\\1", slacy_verse2)
+
+slacy_bridge <- str_extract(slacy_lyrics, "\\[Bridge.*?\\].*?(?=\\[)")
+slacy_bridge <-  gsub("([A-Z])", "\n\\1", slacy_bridge)
+
+slacy_instrumental <- str_extract(slacy_lyrics, "\\[Instrumental Break*?\\].*")
+slacy_instrumental <-  gsub("([A-Z])", "\n\\1", slacy_instrumental)
+
+slacy_outro <- str_extract(slacy_lyrics, "\\[Outro.*?\\].*")
+slacy_outro <-  gsub("([A-Z])", "\n\\1", slacy_outro)
+```
+
+```{r}
+slacy_breakdown <- c(slacy_intro, slacy_verse1, slacy_chorus, slacy_postchorus, slacy_verse2, slacy_bridge, slacy_instrumental, slacy_outro)
+
+```
+
+First Class structure:
+Intro
+Chorus
+Verse 1
+Chorus
+Verse 2
+Chorus
+```{r}
+jharlow_extracted <- read_html("https://genius.com/Jack-harlow-first-class-lyrics")
+jharlow_lyrics <- html_nodes(jharlow_extracted, ".Dzxov") %>% html_text() 
+jharlow_lyrics <- paste(jharlow_lyrics[1], jharlow_lyrics[2])
+jharlow_lyrics_clean <- str_remove_all(jharlow_lyrics, "\\[.*?\\]")
+jharlow_lyrics_clean <-  gsub("([A-Z])", "\n\\1", jharlow_lyrics_clean)
+
+
+jharlow_intro <- str_extract(jharlow_lyrics, "\\[Intro.*?\\].*?\\[")
+jharlow_intro <-  gsub("([A-Z])", "\n\\1", jharlow_intro)
+
+jharlow_verse1 <- str_extract(jharlow_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
+jharlow_verse1 <-  gsub("([A-Z])", "\n\\1", jharlow_verse1)
+
+jharlow_chorus <- str_extract(jharlow_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
+jharlow_chorus <-  gsub("([A-Z])", "\n\\1", jharlow_chorus)
+
+jharlow_verse2 <- str_extract(jharlow_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
+jharlow_verse2 <-  gsub("([A-Z])", "\n\\1", jharlow_verse2)
+```
+
+```{r}
+jharlow_breakdown <- c(jharlow_intro, jharlow_verse1, jharlow_chorus, jharlow_verse2)
+```
+
+
+STAY structure:
+Chorus
+Verse 1
+Pre-Chorus
+Chorus
+Verse 2
+Pre-Chorus
+Chorus
+```{r}
+klaroi_extracted <- read_html("https://genius.com/The-kid-laroi-and-justin-bieber-stay-lyrics")
+klaroi_lyrics <- html_nodes(klaroi_extracted, ".Dzxov") %>% html_text() 
+klaroi_lyrics <- paste(klaroi_lyrics[1], klaroi_lyrics[2])
+klaroi_lyrics_clean <- str_remove_all(klaroi_lyrics, "\\[.*?\\]")
+klaroi_lyrics_clean <- gsub("([A-Z])", "\n\\1", klaroi_lyrics_clean)
+
+
+klaroi_verse1 <- str_extract(klaroi_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
+klaroi_verse1 <-  gsub("([A-Z])", "\n\\1", klaroi_verse1)
+
+klaroi_prechorus <- str_extract(klaroi_lyrics, "\\[Pre-Chorus.*?\\].*?(?=\\[)")
+klaroi_prechorus <-  gsub("([A-Z])", "\n\\1", klaroi_prechorus)
+
+klaroi_chorus <- str_extract(klaroi_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
+klaroi_chorus <-  gsub("([A-Z])", "\n\\1", klaroi_chorus)
+
+klaroi_verse2 <- str_extract(klaroi_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
+klaroi_verse2 <-  gsub("([A-Z])", "\n\\1", klaroi_verse2)
+```
+
+```{r}
+klaroi_breakdown <- c(klaroi_verse1, klaroi_prechorus, klaroi_chorus, klaroi_verse2)
+```
+
+
+
+### combining lyrics by sections 
+```{r}
+intro <- c(hstyles_intro, ganimals_intro, slacy_intro, jharlow_intro)
+verse1 <- c(hstyles_verse1, ganimals_verse1, slacy_verse1, jharlow_verse1, klaroi_verse1)
+pre_chorus <- klaroi_prechorus
+chorus <- c(hstyles_chorus, ganimals_chorus, slacy_chorus, jharlow_chorus, klaroi_chorus)
+post_chorus <- slacy_postchorus
+verse2 <- c(hstyles_verse2, ganimals_verse2, slacy_verse2, jharlow_verse2, klaroi_verse2)
+bridge  <- c(hstyles_bridge, ganimals_bridge, slacy_bridge)
+outro <- c(hstyles_outro, ganimals_outro, slacy_outro)
+```
+
+
+## Generating New Song
+when generating a new song, the sampled lyrics should be unnested and seperated based on their sections of intro/verse, chorus, bridge, outro. Currently, everything is bundled together. 
+Also use n-grams to make the generated lyrics more cohesive
+
+
+
+
+
