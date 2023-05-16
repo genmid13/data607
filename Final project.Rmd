@@ -1,12 +1,9 @@
----
----
----
+## Intro 
+The purpose of this analysis is to elucidate the hidden structure behind  the 20 top track of 2022 (deemed by Spotify) by analyzing both the songs' lyrics and their innert qualities surrounding its composition.
 
-##Intro This project looks into the most streamed songs in the US in order to identify what qualities may allude to their success.
+This project is only a descriptive analysis to "sketch" an outline for what a song should possess to have had a chance at success in 2022. This outline is to be compared to in order to predict, it is not predicting in itself.
 
-This is a descriptive analysis where focus is place on the type of vocabulary used among the sample when breakind down its structure, as well as focusing on other innert qualities to a song such as BPM, tempo, danceability, etc.
-
-The objective of this project is to provide a framework where music can be compared to in predicting potential success.
+The project can be extended further by creating a Lyric Generator by training a Long Short Term Memory mode.
 
 ```{r}
 library(tidyverse)
@@ -192,7 +189,7 @@ lilnasx_intro <- str_extract(lilnasx_lyrics, "\\[Intro.*?\\].*?(?=\\[)")
 lilnasx_verse1 <- str_extract(lilnasx_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
 lilnasx_prechorus <- str_extract(lilnasx_lyrics, "\\[Pre-Chorus.*?\\].*?(?=\\[)")
 lilnasx_chorus <- str_extract(lilnasx_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
-lilnasx_verse2 <- str_extract(lilnasx_lyrics, "\\[Verse 2\\].*?(?=\\[)")
+lilnasx_verse2 <- str_extract(lilnasx_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
 lilnasx_postchorus <- str_extract(lilnasx_lyrics, "\\[Post-Chorus.*?\\].*?(?=\\[)")
 lilnasx_bridge <- str_extract(lilnasx_lyrics, "\\[Bridge.*?\\].*?(?=\\[)")
 lilnasx_outro <- str_extract(lilnasx_lyrics, "\\[Outro.*?\\].*?(?=\\[)")
@@ -445,17 +442,15 @@ pivot_data_cleaned <- pivot_data_cleaned %>%
 filter(Lyrics != "") 
 
 
-more_stopwords <- c("yo", "yeah", "i'ma", "ooh-woah", "l.", "a.", "youre", "im", "id", "dont", "alright", "woah", "ooh", "oh-oh-oh", "a—[", "ah", "ayy", "d-", "baby", "uh", "hah", "nigga", "niggas", "damn", "shit", "y'all", "ch", "'bout", "gettin'", "comin'", "babe")
+more_stopwords <- c("yo", "yeah", "i'ma", "ooh-woah", "l.", "a.", "youre", "im", "id", "dont", "alright", "woah", "ooh", "oh-oh-oh", "a—[", "ah", "ayy", "d-", "baby", "uh", "hah", "nigga", "niggas", "damn", "shit", "y'all", "ch", "'bout", "gettin'", "comin'", "babe", "mmm")
 
 pivot_data_cleaned <- pivot_data_cleaned %>%
   filter(!Lyrics %in% more_stopwords)
 
 ```
 
+
 ## Intro
-
-Across the intros of the sampled songs, there's an average of 23 words in an intro with stop words included, 9 words with stop words removed where 7 of those words are unique to the verse.
-
 ```{r}
 library(knitr)
 library(kableExtra)
@@ -551,9 +546,6 @@ pivot_data_intro %>%
 ```
 
 ## Verse 1
-
-Across the first verse's of the sampled songs, there's an average of 64 words in verse 1 with stop words included, 20 words with stop words removed where 18 of those words are unique to the verse.
-
 ```{r}
 avg_words_with_stopwords <- pivot_data %>%
   filter(Section == "verse1") %>%
@@ -630,6 +622,8 @@ pivot_data_verse1 %>%
   theme(plot.title = element_text(hjust = 0.5)) +
   coord_flip()
 
+pivot_data_verse1 %>%
+  filter(n > 2)
 
 ```
 
@@ -667,6 +661,13 @@ avg_unique_words_verse <- pivot_data_cleaned %>%
   summarise(average_unique_words = mean(length(unique(Lyrics)))) %>%
   summarise(mean_average_unique_words = mean(average_unique_words))
 avg_unique_words_verse
+
+
+
+dtaf <- c(avg_words_with_stopwords, avg_words_no_stopwords, avg_unique_words_verse)
+dtaf <- data.frame(dtaf)
+dtaf <- pivot_longer(dtaf, everything(), names_to = "Average", values_to = "Value")
+dtaf$Average <- c("Average Including Stopwords", "Average Excluding Stopwords", "Average Unique Words (excluding stopwords)")
 
 
 kable(dtaf, format = "html", caption = "Summary Table") %>%
@@ -725,9 +726,6 @@ pivot_data_prechorus %>%
 ```
 
 ## Chorus
-
-On average, the chorus of the sampled songs contain 50 words with stop words and 15 words without where only 9 of those words are unique
-
 ```{r}
 avg_words_with_stopwords <- pivot_data %>%
   filter(Section == "chorus") %>%
@@ -753,6 +751,13 @@ avg_unique_words_verse <- pivot_data_cleaned %>%
   summarise(mean_average_unique_words = mean(average_unique_words))
 avg_unique_words_verse
 
+
+dtaf <- c(avg_words_with_stopwords, avg_words_no_stopwords, avg_unique_words_verse)
+dtaf <- data.frame(dtaf)
+dtaf <- pivot_longer(dtaf, everything(), names_to = "Average", values_to = "Value")
+dtaf$Average <- c("Average Including Stopwords", "Average Excluding Stopwords", "Average Unique Words (excluding stopwords)")
+
+
 kable(dtaf, format = "html", caption = "Summary Table") %>%
   kable_styling("striped", full_width = FALSE)
 ```
@@ -767,7 +772,7 @@ df <- data.frame(
 
 ggplot(df, aes(x = Component, y = Count, fill = Component)) +
   geom_bar(stat = "identity") +
-  labs(title = "Word Composition", y = "Count") +
+  labs(title = "Chorus Word Composition", y = "Count") +
   theme_minimal() +
   theme(plot.margin = margin(5, 5, 5, 5, "mm"),
         legend.position = "none",
@@ -836,6 +841,12 @@ avg_unique_words_verse <- pivot_data_cleaned %>%
   summarise(average_unique_words = mean(length(unique(Lyrics)))) %>%
   summarise(mean_average_unique_words = mean(average_unique_words))
 avg_unique_words_verse
+
+
+dtaf <- c(avg_words_with_stopwords, avg_words_no_stopwords, avg_unique_words_verse)
+dtaf <- data.frame(dtaf)
+dtaf <- pivot_longer(dtaf, everything(), names_to = "Average", values_to = "Value")
+dtaf$Average <- c("Average Including Stopwords", "Average Excluding Stopwords", "Average Unique Words (excluding stopwords)")
 
 
 kable(dtaf, format = "html", caption = "Summary Table") %>%
@@ -921,6 +932,13 @@ avg_unique_words_verse <- pivot_data_cleaned %>%
   summarise(mean_average_unique_words = mean(average_unique_words))
 avg_unique_words_verse
 
+
+dtaf <- c(avg_words_with_stopwords, avg_words_no_stopwords, avg_unique_words_verse)
+dtaf <- data.frame(dtaf)
+dtaf <- pivot_longer(dtaf, everything(), names_to = "Average", values_to = "Value")
+dtaf$Average <- c("Average Including Stopwords", "Average Excluding Stopwords", "Average Unique Words (excluding stopwords)")
+
+
 kable(dtaf, format = "html", caption = "Summary Table") %>%
   kable_styling("striped", full_width = FALSE)
 ```
@@ -935,7 +953,7 @@ df <- data.frame(
 
 ggplot(df, aes(x = Component, y = Count, fill = Component)) +
   geom_bar(stat = "identity") +
-  labs(title = "Word Composition", y = "Count") +
+  labs(title = "Verse 2 Word Composition", y = "Count") +
   theme_minimal() +
   theme(plot.margin = margin(5, 5, 5, 5, "mm"),
         legend.position = "none",
@@ -1003,6 +1021,12 @@ avg_unique_words_verse <- pivot_data_cleaned %>%
   summarise(average_unique_words = mean(length(unique(Lyrics)))) %>%
   summarise(mean_average_unique_words = mean(average_unique_words))
 avg_unique_words_verse
+
+
+dtaf <- c(avg_words_with_stopwords, avg_words_no_stopwords, avg_unique_words_verse)
+dtaf <- data.frame(dtaf)
+dtaf <- pivot_longer(dtaf, everything(), names_to = "Average", values_to = "Value")
+dtaf$Average <- c("Average Including Stopwords", "Average Excluding Stopwords", "Average Unique Words (excluding stopwords)")
 
 
 kable(dtaf, format = "html", caption = "Summary Table") %>%
@@ -1090,6 +1114,12 @@ avg_unique_words_verse <- pivot_data_cleaned %>%
 avg_unique_words_verse
 
 
+dtaf <- c(avg_words_with_stopwords, avg_words_no_stopwords, avg_unique_words_verse)
+dtaf <- data.frame(dtaf)
+dtaf <- pivot_longer(dtaf, everything(), names_to = "Average", values_to = "Value")
+dtaf$Average <- c("Average Including Stopwords", "Average Excluding Stopwords", "Average Unique Words (excluding stopwords)")
+
+
 kable(dtaf, format = "html", caption = "Summary Table") %>%
   kable_styling("striped", full_width = FALSE)
 ```
@@ -1104,7 +1134,7 @@ df <- data.frame(
 
 ggplot(df, aes(x = Component, y = Count, fill = Component)) +
   geom_bar(stat = "identity") +
-  labs(title = "Word Composition", y = "Count") +
+  labs(title = "Outro Word Composition", y = "Count") +
   theme_minimal() +
   theme(plot.margin = margin(5, 5, 5, 5, "mm"),
         legend.position = "none",
@@ -1149,7 +1179,7 @@ pivot_data_outro %>%
 
 
 
-## Other Innert Qualities to the Sampled Music
+## Compositional Qualities to the Sampled Music
 
 #Extracting Song Qualities from Spotify API Using Spotify API, the qualitative factors of each song is extracted (danceability, energy, tempo, key, etc)
 
@@ -1256,6 +1286,7 @@ kodak_qual <- get_track_audio_features("1Y5Jvi3eLi4Chwqch9GMem")
 kodak_qual$Artist <- "Kodak Black"
 kodak_qual$Song <- "Super Gremlin"
 kodak_qual <- kodak_qual[, c(ncol(kodak_qual) - 1, ncol(kodak_qual), 1:(ncol(kodak_qual) - 2))]
+kodak_qual
 ```
 
 ```{r}
@@ -1450,3 +1481,19 @@ kable(avg_qual, format = "html", caption = "Summary Table") %>%
 
 
 ## Conclusion
+Intro (Theme: Summer Experience)
+(optional)
+If used, the intro should be the shortest section while using the most non-filler language. Most of the language should only be repeated once here.
+
+Verse 1 (Theme: Romance//Love)
+The first verse the second longest section where only 1/3 should use non-filler language. However, most of that language should be distinct.
+
+Chorus (theme: Prioritizing Relationships)
+The chorus should be longer than the intro/outro but less than the verses. The chorus has most filler language and the least distinctiveness in its non-filler language
+
+Verse 2 (Theme: Temporal Longing)
+The second verse has the most words used. Almost all of it non-filler language (that only take 1/3 of the section) is distinct.
+
+Outro (Theme: Summer Vacation)
+(optional)
+The outro uses more words than the intro (and less than the others) but is less complex in its non-filler language.
