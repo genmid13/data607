@@ -1,3 +1,13 @@
+---
+---
+---
+
+##Intro This project looks into the most streamed songs in the US in order to identify what qualities may allude to their success.
+
+This is a descriptive analysis where focus is place on the type of vocabulary used among the sample when breakind down its structure, as well as focusing on other innert qualities to a song such as BPM, tempo, danceability, etc.
+
+The objective of this project is to provide a framework where music can be compared to in predicting potential success.
+
 ```{r}
 library(tidyverse)
 library(tidytext) #text mining
@@ -9,235 +19,1434 @@ library(wordcloud) #word cloud visualization
 ```
 
 ## Extracting Lyrics from Genius
-The lyrics extracted from Genius coincide to the songs prevalent in Spotify's
-most-streamed songs in the U.S. for 2022.
-The extracted lyrics are then broken down into each section and assigned its own vector. This is to help train the later model in generating lyrics to specific sections of  a song
 
+The lyrics extracted from Genius coincide to the songs prevalent in Spotify's most-streamed songs in the U.S. for 2022. The extracted lyrics are then broken down into each section and assigned its own vector. This is to help train the later model in generating lyrics to specific sections of a song
 
-As It Was structure:
-Intro
-Verse 1
-Chorus
-Verse 2
-Chorus
-Bridge 
-Outro
+As It Was
+
 ```{r}
 hstyles_extracted <- read_html("https://genius.com/Harry-styles-as-it-was-lyrics")
 hstyles_lyrics <- html_nodes(hstyles_extracted, ".Dzxov") %>% html_text() 
 hstyles_lyrics <- paste(hstyles_lyrics[1], hstyles_lyrics[2])
-hstyles_lyrics_clean <- str_remove_all(hstyles_lyrics, "\\[.*?\\]")
-hstyles_lyrics_clean <-  gsub("([A-Z])", " \\1", hstyles_lyrics_clean)
-#hstyles_lyrics <-  gsub("([A-Z])", "\n\\1", hstyles_lyrics)
-
-hstyles_intro <- str_extract(hstyles_lyrics, "\\[Intro\\].*?\\[")
-hstyles_intro <-  gsub("([A-Z])", "\n\\1", hstyles_intro)
 
 
-hstyles_verse1 <- str_extract(hstyles_lyrics, "\\[Verse 1\\].*?(?=\\[)")
-hstyles_verse1 <-  gsub("([A-Z])", "\n\\1", hstyles_verse1)
+hstyles_intro <- str_extract(hstyles_lyrics, "\\[Intro.*?\\].*?\\[")
+hstyles_verse1 <- str_extract(hstyles_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
+hstyles_prechorus <- str_extract(hstyles_lyrics, "\\[Pre-Chorus.*?\\].*?(?=\\[)")
+hstyles_chorus <- str_extract(hstyles_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
+hstyles_postchorus <- str_extract(hstyles_lyrics, "\\[Post-Chorus.*?\\].*?(?=\\[)")
+hstyles_verse2 <- str_extract(hstyles_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
+hstyles_bridge <- str_extract(hstyles_lyrics, "\\[Bridge.*?\\].*?(?=\\[)")
+hstyles_outro <- str_extract(hstyles_lyrics, "\\[Outro.*?\\].*")
 
-hstyles_chorus <- str_extract(hstyles_lyrics, "\\[Chorus\\].*?(?=\\[)")
-hstyles_chorus <-  gsub("([A-Z])", "\n\\1", hstyles_chorus)
-
-hstyles_verse2 <- str_extract(hstyles_lyrics, "\\[Verse 2\\].*?(?=\\[)")
-hstyles_verse2 <-  gsub("([A-Z])", "\n\\1", hstyles_verse2)
-cat(hstyles_verse2)
-
-hstyles_bridge <- str_extract(hstyles_lyrics, "\\[Bridge\\].*?(?=\\[)")
-hstyles_bridge <-  gsub("([A-Z])", "\n\\1", hstyles_bridge)
-
-hstyles_outro <- str_extract(hstyles_lyrics, "\\[Outro\\].*")
-hstyles_outro <-  gsub("([A-Z])", "\n\\1", hstyles_outro)
 ```
 
-```{r}
-#recombining the sections so now each section has its own index
-#the recombined lyrics does not reflect the actual structure of the original as each section is only shown once. (chorus is not repeated)
+Heat Waves
 
-hstlyles_breakdown <- c(hstyles_intro, hstyles_verse1, hstyles_chorus, hstyles_verse2, hstyles_bridge, hstyles_outro)
-```
-
-
-Heat Waves structure:
-Intro
-Chorus
-Verse 1
-Chorus
-Verse 2
-Chorus
-Bridge
-Chorus
-Outro
 ```{r}
 ganimals_extracted <- read_html("https://genius.com/Glass-animals-heat-waves-lyrics")
 ganimals_lyrics <- html_nodes(ganimals_extracted, ".Dzxov") %>% html_text() 
 ganimals_lyrics <- paste(ganimals_lyrics[1], ganimals_lyrics[2], ganimals_lyrics[3])
-ganimals_lyrics_clean <- str_remove_all(ganimals_lyrics, "\\[.*?\\]")
-ganimals_lyrics_clean <-  gsub("([A-HJ-Z])", "\n\\1", ganimals_lyrics_clean)
 
-ganimals_intro <- str_extract(ganimals_lyrics, "\\[Intro\\].*?\\[")
-ganimals_intro <-  gsub("([A-Z])", "\n\\1", ganimals_intro)
-
-
-ganimals_verse1 <- str_extract(ganimals_lyrics, "\\[Verse 1\\].*?(?=\\[)")
-ganimals_verse1 <-  gsub("([A-Z])", "\n\\1", ganimals_verse1)
-
-ganimals_chorus <- str_extract(ganimals_lyrics, "\\[Chorus\\].*?(?=\\[)")
-ganimals_chorus <-  gsub("([A-Z])", "\n\\1", ganimals_chorus)
-
-ganimals_verse2 <- str_extract(ganimals_lyrics, "\\[Verse 2\\].*?(?=\\[)")
-ganimals_verse2 <-  gsub("([A-Z])", "\n\\1", ganimals_verse2)
-
-ganimals_bridge <- str_extract(ganimals_lyrics, "\\[Bridge\\].*?(?=\\[)")
-ganimals_bridge <-  gsub("([A-Z])", "\n\\1", ganimals_bridge)
-
-ganimals_outro <- str_extract(ganimals_lyrics, "\\[Outro\\].*")
-ganimals_outro <-  gsub("([A-Z])", "\n\\1", ganimals_outro)
+ganimals_intro <- str_extract(ganimals_lyrics, "\\[Intro.*?\\].*?\\[")
+ganimals_verse1 <- str_extract(ganimals_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
+ganimals_prechorus <- str_extract(ganimals_lyrics, "\\[Pre-Chorus.*?\\].*?(?=\\[)")
+ganimals_chorus <- str_extract(ganimals_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
+ganimals_postchorus <- str_extract(ganimals_lyrics, "\\[Post-Chorus.*?\\].*?(?=\\[)")
+ganimals_verse2 <- str_extract(ganimals_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
+ganimals_bridge <- str_extract(ganimals_lyrics, "\\[Bridge.*?\\].*?(?=\\[)")
+ganimals_outro <- str_extract(ganimals_lyrics, "\\[Outro.*?\\].*")
 
 
 ```
 
-```{r}
-ganimals_breakdown <- c(ganimals_intro, ganimals_verse1, ganimals_chorus, ganimals_verse2, ganimals_bridge, ganimals_outro)
+Bad Habit
 
-```
-
-
-Dark Red structure:
-Intro
-Verse 1
-Chorus
-Post-Chorus
-Verse 2
-Chorus
-Post-Chorus
-Bridge
-Instrumental Break
-Outro
 ```{r}
 slacy_extracted <- read_html("https://genius.com/Steve-lacy-bad-habit-lyrics")
 slacy_lyrics <- html_nodes(slacy_extracted, ".Dzxov") %>% html_text() 
 slacy_lyrics <- paste(slacy_lyrics[1], slacy_lyrics[2], slacy_lyrics[3])
-slacy_lyrics_clean <-  gsub("([a-z])([A-Z])", "\\1\n\\2", slacy_lyrics)
-slacy_lyrics_clean <- str_remove_all(slacy_lyrics_clean, "\\[.*?\\]")
 
 slacy_intro <- str_extract(slacy_lyrics, "\\[Intro.*?\\].*?\\[")
-slacy_intro <-  gsub("([A-Z])", "\n\\1", slacy_intro)
-
 slacy_verse1 <- str_extract(slacy_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
-slacy_verse1 <-  gsub("([A-Z])", "\n\\1", slacy_verse1)
-
+slacy_prechorus <- str_extract(slacy_lyrics, "\\[Pre-Chorus\\].*?(?=\\[)")
 slacy_chorus <- str_extract(slacy_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
-slacy_chorus <-  gsub("([A-Z])", "\n\\1", slacy_chorus)
-
 slacy_postchorus <-  str_extract(slacy_lyrics, "\\[Post-Chorus.*?\\].*?(?=\\[)")
-slacy_postchorus <-  gsub("([A-Z])", "\n\\1", slacy_postchorus)
-
 slacy_verse2 <- str_extract(slacy_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
-slacy_verse2 <-  gsub("([A-Z])", "\n\\1", slacy_verse2)
-
 slacy_bridge <- str_extract(slacy_lyrics, "\\[Bridge.*?\\].*?(?=\\[)")
-slacy_bridge <-  gsub("([A-Z])", "\n\\1", slacy_bridge)
-
 slacy_instrumental <- str_extract(slacy_lyrics, "\\[Instrumental Break*?\\].*")
-slacy_instrumental <-  gsub("([A-Z])", "\n\\1", slacy_instrumental)
-
 slacy_outro <- str_extract(slacy_lyrics, "\\[Outro.*?\\].*")
-slacy_outro <-  gsub("([A-Z])", "\n\\1", slacy_outro)
-```
-
-```{r}
-slacy_breakdown <- c(slacy_intro, slacy_verse1, slacy_chorus, slacy_postchorus, slacy_verse2, slacy_bridge, slacy_instrumental, slacy_outro)
 
 ```
 
-First Class structure:
-Intro
-Chorus
-Verse 1
-Chorus
-Verse 2
-Chorus
+First Class
+
 ```{r}
 jharlow_extracted <- read_html("https://genius.com/Jack-harlow-first-class-lyrics")
 jharlow_lyrics <- html_nodes(jharlow_extracted, ".Dzxov") %>% html_text() 
 jharlow_lyrics <- paste(jharlow_lyrics[1], jharlow_lyrics[2])
-jharlow_lyrics_clean <- str_remove_all(jharlow_lyrics, "\\[.*?\\]")
-jharlow_lyrics_clean <-  gsub("([A-Z])", "\n\\1", jharlow_lyrics_clean)
-
 
 jharlow_intro <- str_extract(jharlow_lyrics, "\\[Intro.*?\\].*?\\[")
-jharlow_intro <-  gsub("([A-Z])", "\n\\1", jharlow_intro)
-
 jharlow_verse1 <- str_extract(jharlow_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
-jharlow_verse1 <-  gsub("([A-Z])", "\n\\1", jharlow_verse1)
-
+jharlow_prechorus <- str_extract(jharlow_lyrics, "\\[Pre-Chorus\\].*?(?=\\[)")
 jharlow_chorus <- str_extract(jharlow_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
-jharlow_chorus <-  gsub("([A-Z])", "\n\\1", jharlow_chorus)
-
+jharlow_postchorus <- str_extract(jharlow_lyrics, "\\[Post-Chorus\\].*?(?=\\[)")
 jharlow_verse2 <- str_extract(jharlow_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
-jharlow_verse2 <-  gsub("([A-Z])", "\n\\1", jharlow_verse2)
+jharlow_bridge <- str_extract(jharlow_lyrics, "\\[Bridge.*?\\].*?(?=\\[)")
+jharlow_outro <- str_extract(jharlow_lyrics, "\\[Outro.*?\\].*")
+
 ```
 
-```{r}
-jharlow_breakdown <- c(jharlow_intro, jharlow_verse1, jharlow_chorus, jharlow_verse2)
-```
+STAY
 
-
-STAY structure:
-Chorus
-Verse 1
-Pre-Chorus
-Chorus
-Verse 2
-Pre-Chorus
-Chorus
 ```{r}
 klaroi_extracted <- read_html("https://genius.com/The-kid-laroi-and-justin-bieber-stay-lyrics")
 klaroi_lyrics <- html_nodes(klaroi_extracted, ".Dzxov") %>% html_text() 
 klaroi_lyrics <- paste(klaroi_lyrics[1], klaroi_lyrics[2])
-klaroi_lyrics_clean <- str_remove_all(klaroi_lyrics, "\\[.*?\\]")
-klaroi_lyrics_clean <- gsub("([A-Z])", "\n\\1", klaroi_lyrics_clean)
 
-
+klaroi_intro <- str_extract(klaroi_lyrics, "\\[Intro.*?\\].*?\\[")
 klaroi_verse1 <- str_extract(klaroi_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
-klaroi_verse1 <-  gsub("([A-Z])", "\n\\1", klaroi_verse1)
-
 klaroi_prechorus <- str_extract(klaroi_lyrics, "\\[Pre-Chorus.*?\\].*?(?=\\[)")
-klaroi_prechorus <-  gsub("([A-Z])", "\n\\1", klaroi_prechorus)
-
 klaroi_chorus <- str_extract(klaroi_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
-klaroi_chorus <-  gsub("([A-Z])", "\n\\1", klaroi_chorus)
-
+klaroi_postchorus <- str_extract(klaroi_lyrics, "\\[Post-Chorus\\].*?(?=\\[)")
 klaroi_verse2 <- str_extract(klaroi_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
-klaroi_verse2 <-  gsub("([A-Z])", "\n\\1", klaroi_verse2)
+klaroi_bridge <- str_extract(klaroi_lyrics, "\\[Bridge.*?\\].*?(?=\\[)")
+klaroi_outro <- str_extract(klaroi_lyrics, "\\[Outro.*?\\].*")
+```
+
+Running Up That Hill (A Deal With God)
+
+```{r}
+kbush_extracted <- read_html("https://genius.com/Kate-bush-running-up-that-hill-a-deal-with-god-lyrics")
+kbush_lyrics <- html_nodes(kbush_extracted, ".Dzxov") %>% html_text() 
+kbush_lyrics <- paste(kbush_lyrics[1], kbush_lyrics[2], kbush_lyrics[3])
+
+kbush_intro <- str_extract(kbush_lyrics, "\\[Intro.*?\\].*?(?=\\[)")
+kbush_verse1 <- str_extract(kbush_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
+kbush_prechorus <- str_extract(kbush_lyrics, "\\[Pre-Chorus.*?\\].*?(?=\\[)")
+kbush_chorus <- str_extract(kbush_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
+kbush_verse2 <- str_extract(kbush_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
+kbush_postchorus <- str_extract(kbush_lyrics, "\\[Post-Chorus.*?\\].*?(?=\\[)")
+kbush_bridge <- str_extract(kbush_lyrics, "\\[Bridge.*?\\].*?(?=\\[)")
+kbush_outro <- str_extract(kbush_lyrics, "\\[Outro.*?\\].*?(?=\\[)")
+```
+
+Sweater Weather
+
+```{r}
+neighbourhood_extracted <- read_html("https://genius.com/The-neighbourhood-sweater-weather-lyrics")
+neighbourhood_lyrics <- html_nodes(neighbourhood_extracted, ".Dzxov") %>% html_text() 
+neighbourhood_lyrics <- paste(neighbourhood_lyrics[1], neighbourhood_lyrics[2], neighbourhood_lyrics[2])
+
+neighbourhood_intro <- str_extract(neighbourhood_lyrics, "\\[Intro.*?\\].*?(?=\\[)")
+neighbourhood_verse1 <- str_extract(neighbourhood_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
+neighbourhood_prechorus <- str_extract(neighbourhood_lyrics, "\\[Pre-Chorus.*?\\].*?(?=\\[)")
+neighbourhood_chorus <- str_extract(neighbourhood_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
+neighbourhood_postchorus <- str_extract(neighbourhood_lyrics, "\\[Post-Chorus.*?\\].*?(?=\\[)")
+neighbourhood_verse2 <- str_extract(neighbourhood_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
+neighbourhood_bridge <- str_extract(neighbourhood_lyrics, "\\[Bridge.*?\\].*?(?=\\[)")
+neighbourhood_outro <- str_extract(neighbourhood_lyrics, "\\[Outro.*?\\].*?(?=\\[)")
+```
+
+Dark Red
+
+```{r}
+slacy2_extracted <- read_html("https://genius.com/Steve-lacy-dark-red-lyrics")
+slacy2_lyrics <- html_nodes(slacy2_extracted, ".Dzxov") %>% html_text() 
+slacy2_lyrics <- paste(slacy2_lyrics[1], slacy2_lyrics[2])
+
+slacy2_intro <- str_extract(slacy2_lyrics, "\\[Intro.*?\\].*?(?=\\[)")
+slacy2_verse1 <- str_extract(slacy2_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
+slacy2_prechorus <- str_extract(slacy2_lyrics, "\\[Pre-Chorus.*?\\].*?(?=\\[)")
+slacy2_chorus <- str_extract(slacy2_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
+slacy2_verse2 <- str_extract(slacy2_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
+slacy2_postchorus <- str_extract(slacy2_lyrics, "\\[Post-Chorus.*?\\].*?(?=\\[)")
+slacy2_bridge <- str_extract(slacy2_lyrics, "\\[Bridge.*?\\].*?(?=\\[)")
+slacy2_outro <- str_extract(slacy2_lyrics, "\\[Outro.*?\\].*?(?=\\[)")
+```
+
+We Don't Talk About Bruno
+
+```{r}
+encanto_extracted <- read_html("https://genius.com/Carolina-gaitan-mauro-castillo-adassa-rhenzy-feliz-diane-guerrero-and-stephanie-beatriz-we-dont-talk-about-bruno-lyrics")
+encanto_lyrics <- html_nodes(encanto_extracted, ".Dzxov") %>% html_text() 
+encanto_lyrics <- paste(encanto_lyrics[1], encanto_lyrics[2], encanto_lyrics[3])
+encanto_intro <- str_extract(encanto_lyrics, "\\[Intro.*?\\].*?(?=\\[)")
+encanto_verse1 <- str_extract(encanto_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
+encanto_prechorus <- str_extract(encanto_lyrics, "\\[Pre-Chorus.*?\\].*?(?=\\[)")
+encanto_chorus <- str_extract(encanto_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
+encanto_verse2 <- str_extract(encanto_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
+encanto_postchorus <- str_extract(encanto_lyrics, "\\[Post-Chorus.*?\\].*?(?=\\[)")
+encanto_bridge <- str_extract(encanto_lyrics, "\\[Bridge.*?\\].*?(?=\\[)")
+encanto_outro <- str_extract(encanto_lyrics, "\\[Outro.*?\\].*?(?=\\[)")
+```
+
+Industry Baby
+
+```{r}
+lilnasx_extracted <- read_html("https://genius.com/Lil-nas-x-and-jack-harlow-industry-baby-lyrics")
+lilnasx_lyrics <- html_nodes(lilnasx_extracted, ".Dzxov") %>% html_text() 
+lilnasx_lyrics <- paste(lilnasx_lyrics[1], lilnasx_lyrics[2], lilnasx_lyrics[3])
+
+lilnasx_intro <- str_extract(lilnasx_lyrics, "\\[Intro.*?\\].*?(?=\\[)")
+lilnasx_verse1 <- str_extract(lilnasx_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
+lilnasx_prechorus <- str_extract(lilnasx_lyrics, "\\[Pre-Chorus.*?\\].*?(?=\\[)")
+lilnasx_chorus <- str_extract(lilnasx_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
+lilnasx_verse2 <- str_extract(lilnasx_lyrics, "\\[Verse 2\\].*?(?=\\[)")
+lilnasx_postchorus <- str_extract(lilnasx_lyrics, "\\[Post-Chorus.*?\\].*?(?=\\[)")
+lilnasx_bridge <- str_extract(lilnasx_lyrics, "\\[Bridge.*?\\].*?(?=\\[)")
+lilnasx_outro <- str_extract(lilnasx_lyrics, "\\[Outro.*?\\].*?(?=\\[)")
+```
+
+Glimpse of Us
+
+```{r}
+joji_extracted <- read_html("https://genius.com/Joji-glimpse-of-us-lyrics")
+joji_lyrics <- html_nodes(joji_extracted, ".Dzxov") %>% html_text() 
+joji_lyrics <- paste(joji_lyrics[1], joji_lyrics[2], joji_lyrics[3])
+
+joji_intro <- str_extract(joji_lyrics, "\\[Intro.*?\\].*?(?=\\[)")
+joji_verse1 <- str_extract(joji_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
+joji_prechorus <- str_extract(joji_lyrics, "\\[Pre-Chorus.*?\\].*?(?=\\[)")
+joji_chorus <- str_extract(joji_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
+joji_verse2 <- str_extract(joji_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
+joji_postchorus <- str_extract(joji_lyrics, "\\[Post-Chorus.*?\\].*?(?=\\[)")
+joji_bridge <- str_extract(joji_lyrics, "\\[Bridge.*?\\].*?(?=\\[)")
+joji_outro <- str_extract(joji_lyrics, "\\[Outro.*?\\].*?(?=\\[)")
+```
+
+No Role Modelz
+
+```{r}
+jcole_extracted <- read_html("https://genius.com/J-cole-no-role-modelz-lyrics")
+jcole_lyrics <- html_nodes(jcole_extracted, ".Dzxov") %>% html_text() 
+jcole_lyrics <- paste(jcole_lyrics[1], jcole_lyrics[2], jcole_lyrics[3])
+
+jcole_intro <- str_extract(jcole_lyrics, "\\[Intro.*?\\].*?(?=\\[)")
+jcole_verse1 <- str_extract(jcole_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
+jcole_prechorus <- str_extract(jcole_lyrics, "\\[Pre-Chorus.*?\\].*?(?=\\[)")
+jcole_chorus <- str_extract(jcole_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
+jcole_verse2 <- str_extract(jcole_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
+jcole_postchorus <- str_extract(jcole_lyrics, "\\[Post-Chorus.*?\\].*?(?=\\[)")
+jcole_bridge <- str_extract(jcole_lyrics, "\\[Bridge\\].*?(?=\\[)")
+jcole_outro <- str_extract(jcole_lyrics, "\\[Outro.*?\\].*?(?=\\[)")
+```
+
+Super Gremlin
+
+```{r}
+kodak_extracted <- read_html("https://genius.com/Kodak-black-super-gremlin-lyrics")
+kodak_lyrics <- html_nodes(kodak_extracted, ".Dzxov") %>% html_text() 
+kodak_lyrics <- paste(kodak_lyrics[1], kodak_lyrics[2], kodak_lyrics[3])
+
+kodak_intro <- str_extract(kodak_lyrics, "\\[Intro.*?\\].*?(?=\\[)")
+kodak_verse1 <- str_extract(kodak_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
+kodak_prechorus <- str_extract(kodak_lyrics, "\\[Pre-Chorus.*?\\].*?(?=\\[)")
+kodak_chorus <- str_extract(kodak_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
+kodak_verse2 <- str_extract(kodak_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
+kodak_postchorus <- str_extract(kodak_lyrics, "\\[Post-Chorus.*?\\].*?(?=\\[)")
+kodak_bridge <- str_extract(kodak_lyrics, "\\[Bridge.*?\\].*?(?=\\[)")
+kodak_outro <- str_extract(kodak_lyrics, "\\[Outro.*?\\].*?(?=\\[)")
+```
+
+Knife Talk
+
+```{r}
+drake_extracted <- read_html("https://genius.com/Drake-knife-talk-lyrics")
+drake_lyrics <- html_nodes(drake_extracted, ".Dzxov") %>% html_text() 
+drake_lyrics <- paste(drake_lyrics[1], drake_lyrics[2], drake_lyrics[3])
+
+drake_intro <- str_extract(drake_lyrics, "\\[Intro.*?\\].*?(?=\\[)")
+drake_verse1 <- str_extract(drake_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
+drake_prechorus <- str_extract(drake_lyrics, "\\[Pre-Chorus.*?\\].*?(?=\\[)")
+drake_chorus <- str_extract(drake_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
+drake_verse2 <- str_extract(drake_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
+drake_postchorus <- str_extract(drake_lyrics, "\\[Post-Chorus.*?\\].*?(?=\\[)")
+drake_bridge <- str_extract(drake_lyrics, "\\[Bridge.*?\\].*?(?=\\[)")
+drake_outro <- str_extract(drake_lyrics, "\\[Outro.*?\\].*?(?=\\[)")
+```
+
+WAIT FOR U
+
+```{r}
+future_extracted <- read_html("https://genius.com/Future-wait-for-u-lyrics")
+future_lyrics <- html_nodes(future_extracted, ".Dzxov") %>% html_text() 
+future_lyrics <- paste(future_lyrics[1], future_lyrics[2], future_lyrics[3])
+
+future_intro <- str_extract(future_lyrics, "\\[Intro.*?\\].*?(?=\\[)")
+future_verse1 <- str_extract(future_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
+future_prechorus <- str_extract(future_lyrics, "\\[Pre-Chorus.*?\\].*?(?=\\[)")
+future_chorus <- str_extract(future_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
+future_verse2 <- str_extract(future_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
+future_postchorus <- str_extract(future_lyrics, "\\[Post-Chorus.*?\\].*?(?=\\[)")
+future_bridge <- str_extract(future_lyrics, "\\[Bridge.*?\\].*?(?=\\[)")
+future_outro <- str_extract(future_lyrics, "\\[Outro.*?\\].*?(?=\\[)")
+```
+
+About Damn Time
+
+```{r}
+lizzo_extracted <- read_html("https://genius.com/Lizzo-about-damn-time-lyrics")
+lizzo_lyrics <- html_nodes(lizzo_extracted, ".Dzxov") %>% html_text() 
+lizzo_lyrics <- paste(lizzo_lyrics[1], lizzo_lyrics[2], lizzo_lyrics[3])
+
+lizzo_intro <- str_extract(lizzo_lyrics, "\\[Intro.*?\\].*?(?=\\[)")
+lizzo_verse1 <- str_extract(lizzo_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
+lizzo_prechorus <- str_extract(lizzo_lyrics, "\\[Pre-Chorus.*?\\].*?(?=\\[)")
+lizzo_chorus <- str_extract(lizzo_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
+lizzo_verse2 <- str_extract(lizzo_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
+lizzo_postchorus <- str_extract(lizzo_lyrics, "\\[Post-Chorus.*?\\].*?(?=\\[)")
+lizzo_bridge <- str_extract(lizzo_lyrics, "\\[Bridge.*?\\].*?(?=\\[)")
+lizzo_outro <- str_extract(lizzo_lyrics, "\\[Outro.*?\\].*?(?=\\[)")
+```
+
+Enemy
+
+```{r}
+idragons_extracted <- read_html("https://genius.com/Imagine-dragons-and-jid-enemy-lyrics")
+idragons_lyrics <- html_nodes(idragons_extracted, ".Dzxov") %>% html_text() 
+idragons_lyrics <- paste(idragons_lyrics[1], idragons_lyrics[2], idragons_lyrics[3])
+
+idragons_intro <- str_extract(idragons_lyrics, "\\[Intro.*?\\].*?(?=\\[)")
+idragons_verse1 <- str_extract(idragons_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
+idragons_prechorus <- str_extract(idragons_lyrics, "\\[Pre-Chorus.*?\\].*?(?=\\[)")
+idragons_chorus <- str_extract(idragons_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
+idragons_verse2 <- str_extract(idragons_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
+idragons_postchorus <- str_extract(idragons_lyrics, "\\[Post-Chorus.*?\\].*?(?=\\[)")
+idragons_bridge <- str_extract(idragons_lyrics, "\\[Bridge.*?\\].*?(?=\\[)")
+idragons_outro <- str_extract(idragons_lyrics, "\\[Outro\\].*?(?=\\[)")
+```
+
+505
+
+```{r}
+amonkeys_extracted <- read_html("https://genius.com/Arctic-monkeys-505-lyrics")
+amonkeys_lyrics <- html_nodes(amonkeys_extracted, ".Dzxov") %>% html_text() 
+amonkeys_lyrics <- paste(amonkeys_lyrics[1], amonkeys_lyrics[2], amonkeys_lyrics[3])
+
+amonkeys_intro <- str_extract(amonkeys_lyrics, "\\[Intro.*?\\].*?(?=\\[)")
+amonkeys_verse1 <- str_extract(amonkeys_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
+amonkeys_prechorus <- str_extract(amonkeys_lyrics, "\\[Pre-Chorus.*?\\].*?(?=\\[)")
+amonkeys_chorus <- str_extract(amonkeys_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
+amonkeys_verse2 <- str_extract(amonkeys_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
+amonkeys_postchorus <- str_extract(amonkeys_lyrics, "\\[Post-Chorus.*?\\].*?(?=\\[)")
+amonkeys_bridge <- str_extract(amonkeys_lyrics, "\\[Bridge.*?\\].*?(?=\\[)")
+amonkeys_outro <- str_extract(amonkeys_lyrics, "\\[Outro.*?\\].*?(?=\\[)")
+```
+
+I Love You So
+
+```{r}
+walters_extracted <- read_html("https://genius.com/The-walters-i-love-you-so-lyrics")
+walters_lyrics <- html_nodes(walters_extracted, ".Dzxov") %>% html_text() 
+walters_lyrics <- paste(walters_lyrics[1], walters_lyrics[2], walters_lyrics[3])
+
+walters_intro <- str_extract(walters_lyrics, "\\[Intro.*?\\].*?(?=\\[)")
+walters_verse1 <- str_extract(walters_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
+walters_prechorus <- str_extract(walters_lyrics, "\\[Pre-Chorus.*?\\].*?(?=\\[)")
+walters_chorus <- str_extract(walters_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
+walters_verse2 <- str_extract(walters_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
+walters_postchorus <- str_extract(walters_lyrics, "\\[Post-Chorus.*?\\].*?(?=\\[)")
+walters_bridge <- str_extract(walters_lyrics, "\\[Bridge.*?\\].*?(?=\\[)")
+walters_outro <- str_extract(walters_lyrics, "\\[Outro.*?\\].*?(?=\\[)")
+```
+
+good 4 u
+
+```{r}
+orodrigo_extracted <- read_html("https://genius.com/Olivia-rodrigo-good-4-u-lyrics")
+orodrigo_lyrics <- html_nodes(orodrigo_extracted, ".Dzxov") %>% html_text() 
+orodrigo_lyrics <- paste(orodrigo_lyrics[1], orodrigo_lyrics[2], orodrigo_lyrics[3])
+
+orodrigo_intro <- str_extract(orodrigo_lyrics, "\\[Intro.*?\\].*?(?=\\[)")
+orodrigo_verse1 <- str_extract(orodrigo_lyrics, "\\[Verse 1.*?\\].*?(?=\\[)")
+orodrigo_prechorus <- str_extract(orodrigo_lyrics, "\\[Pre-Chorus.*?\\].*?(?=\\[)")
+orodrigo_chorus <- str_extract(orodrigo_lyrics, "\\[Chorus.*?\\].*?(?=\\[)")
+orodrigo_verse2 <- str_extract(orodrigo_lyrics, "\\[Verse 2.*?\\].*?(?=\\[)")
+orodrigo_postchorus <- str_extract(orodrigo_lyrics, "\\[Post-Chorus.*?\\].*?(?=\\[)")
+orodrigo_bridge <- str_extract(orodrigo_lyrics, "\\[Bridge.*?\\].*?(?=\\[)")
+orodrigo_outro <- str_extract(orodrigo_lyrics, "\\[Outro.*?\\].*?(?=\\[)")
+```
+
+### combining lyrics by sections
+
+```{r}
+intro <- c(hstyles_intro, ganimals_intro, slacy_intro, jharlow_intro, klaroi_intro, kbush_intro, neighbourhood_intro, slacy2_intro, encanto_intro, lilnasx_intro, joji_intro, jcole_intro, kodak_intro, drake_intro, future_intro, lizzo_intro, idragons_intro, amonkeys_intro, walters_intro, orodrigo_intro)
+intro <- str_remove_all(intro, "\\[Intro.*?]|,|\\[,|\\(|\\)")
+intro <-  gsub("([A-Z])", "\n\\1", intro)
+
+verse1 <- c(hstyles_verse1, ganimals_verse1, slacy_verse1, jharlow_verse1, klaroi_verse1, kbush_verse1, neighbourhood_verse1, slacy2_verse1, encanto_verse1, lilnasx_verse1, joji_verse1, jcole_verse1, kodak_verse1, drake_verse1, future_verse1, lizzo_verse1, idragons_verse1, amonkeys_verse1, walters_verse1, orodrigo_verse1)
+verse1 <- str_remove_all(verse1, "\\[Verse 1.*?]|,|\\[,|\\(|\\)")
+verse1 <- gsub("([A-Z])", " \\1", verse1)
+
+pre_chorus <- c(hstyles_prechorus, ganimals_prechorus, slacy_prechorus, jharlow_prechorus, klaroi_prechorus, kbush_prechorus, neighbourhood_prechorus, slacy2_prechorus, encanto_prechorus, lilnasx_prechorus, joji_prechorus, jcole_prechorus, kodak_prechorus, drake_prechorus, future_prechorus, lizzo_prechorus, idragons_prechorus, amonkeys_prechorus, walters_prechorus, orodrigo_prechorus)
+pre_chorus <- str_remove_all(pre_chorus, "\\[Pre-Chorus.*?]|,|\\[,|\\(|\\)")
+pre_chorus <-  gsub("([A-Z])", "\n\\1", pre_chorus)
+
+chorus <- c(hstyles_chorus, ganimals_chorus, slacy_chorus, jharlow_chorus, klaroi_chorus, kbush_chorus, neighbourhood_chorus, slacy2_chorus, encanto_chorus, lilnasx_chorus, joji_chorus, jcole_chorus, kodak_chorus, drake_chorus, future_chorus, lizzo_chorus, idragons_chorus, amonkeys_chorus, walters_chorus, orodrigo_chorus)
+chorus <- str_remove_all(chorus, "\\[Chorus.*?]|[^[:alnum:]\\s]")
+chorus <-  gsub("([A-Z])", "\n\\1", chorus)
+
+post_chorus <- c(hstyles_postchorus, ganimals_postchorus, slacy_postchorus, jharlow_postchorus, klaroi_postchorus, kbush_postchorus, neighbourhood_postchorus, slacy2_postchorus, encanto_postchorus, lilnasx_postchorus, joji_postchorus, jcole_postchorus, kodak_postchorus, drake_postchorus, future_postchorus, lizzo_postchorus, idragons_postchorus, amonkeys_postchorus, walters_postchorus, orodrigo_postchorus)
+post_chorus <- str_remove_all(post_chorus, "\\[Post-Chorus.*?]|[^[:alnum:]\\s]")
+post_chorus <-  gsub("([A-Z])", "\n\\1", post_chorus)
+
+verse2 <- c(hstyles_verse2, ganimals_verse2, slacy_verse2, jharlow_verse2, klaroi_verse2, kbush_verse2, neighbourhood_verse2, slacy2_verse2, encanto_verse2, lilnasx_verse2, joji_verse2, jcole_verse2, kodak_verse2, drake_verse2, future_verse2, lizzo_verse2, idragons_verse2, amonkeys_verse2, walters_verse2, orodrigo_verse2)
+verse2 <- str_remove_all(verse2, "\\[Verse 2.*?]|\\(|\\)|\"|,|\\[,|\\(|\\)")
+verse2 <- gsub("([A-Z])", " \\1", verse2)
+
+bridge  <- c(hstyles_bridge, ganimals_bridge, slacy_bridge, jharlow_bridge, klaroi_bridge, kbush_bridge, neighbourhood_bridge, slacy2_bridge, encanto_bridge, lilnasx_bridge, joji_bridge, jcole_bridge, kodak_bridge, drake_bridge, future_bridge, lizzo_bridge, idragons_bridge, amonkeys_bridge, walters_bridge, orodrigo_bridge)
+bridge <- str_remove_all(bridge, "\\[Bridge.*?]|,|\\[,|\\(|\\)")
+bridge <-  gsub("([A-Z])", "\n\\1", bridge)
+
+outro <- c(hstyles_outro, ganimals_outro, slacy_outro, jharlow_outro, klaroi_outro, kbush_outro, neighbourhood_outro, slacy2_outro, encanto_outro, lilnasx_outro, joji_outro, jcole_outro, kodak_outro, drake_outro, future_outro, lizzo_outro, idragons_outro, amonkeys_outro, walters_outro, orodrigo_outro)
+outro <- str_remove_all(outro, "\\[Outro.*?]|,|\\[,|\\(|\\)")
+outro <-  gsub("([A-Z])", "\n\\1", outro)
 ```
 
 ```{r}
-klaroi_breakdown <- c(klaroi_verse1, klaroi_prechorus, klaroi_chorus, klaroi_verse2)
+data <- data.frame(
+  Artist = c("Harry Styles", "Glass Animals", "Steve Lacy", "Jack Harlow", "The Kid Laroi", "Kate Bush", "the Neighbourhood", "Steve Lacy", "Carolina Gaitan", "Lil Nas X", "Joji", "J.Cole", "Kodak Black", "Drake", "Future", "Lizzo", "Imagine Dragons", "Arctic Monkeys", "The Walters", "Olivia Rodrigo"),
+  Song = c("As It Was", "Heat Waves", "Bad Habit", "First Class", "STAY (feat. Justin Bieber)", "Running Up That Hill (A Deal With God)", "Sweater Weather", "Dark Red", "We Don’t Talk About Bruno", "Industry Baby (feat. Jack Harlow)", "Glimpse of Us", "No Role Modelz", "Super Gremlin", "Knife Talk (with 21 Savage ft. Project Pat", "WAIT FOR U (feat. Drake & Tems)", "About Damn Time", "Enemy (with JID)", "505", "I Love You So", "good 4 u" ) 
+)
+
+data$intro <- intro
+data$verse1 <- verse1
+data$prechorus <- pre_chorus
+data$chorus <- chorus
+data$postchorus <- post_chorus
+data$verse2 <- verse2
+data$bridge <- bridge
+data$outro <- outro
+
 ```
 
+Wide -\> Long DataFrame
 
-
-### combining lyrics by sections 
 ```{r}
-intro <- c(hstyles_intro, ganimals_intro, slacy_intro, jharlow_intro)
-verse1 <- c(hstyles_verse1, ganimals_verse1, slacy_verse1, jharlow_verse1, klaroi_verse1)
-pre_chorus <- klaroi_prechorus
-chorus <- c(hstyles_chorus, ganimals_chorus, slacy_chorus, jharlow_chorus, klaroi_chorus)
-post_chorus <- slacy_postchorus
-verse2 <- c(hstyles_verse2, ganimals_verse2, slacy_verse2, jharlow_verse2, klaroi_verse2)
-bridge  <- c(hstyles_bridge, ganimals_bridge, slacy_bridge)
-outro <- c(hstyles_outro, ganimals_outro, slacy_outro)
+ pivot_data <- data %>%
+  pivot_longer(cols = -c(Artist, Song), names_to = "Section", values_to = "Lyrics") %>%
+  mutate(Lyrics = str_split(Lyrics, pattern = "\\s+")) %>%
+  unnest()
+
+pivot_data <- pivot_data %>%
+filter(Lyrics != "") 
+pivot_data
+```
+
+removing the stop words
+
+```{r}
+pivot_data_cleaned <- pivot_data # pivot_data_cleaned is a duplicated pivot_data with the removed stop words
+stopwords <- tolower(stop_words$word)
+
+pivot_data_cleaned$Lyrics <- ifelse(tolower(pivot_data$Lyrics) %in% stopwords, "", pivot_data$Lyrics)
+pivot_data_cleaned <- pivot_data_cleaned %>%
+filter(Lyrics != "") 
+
+
+more_stopwords <- c("yo", "yeah", "i'ma", "ooh-woah", "l.", "a.", "youre", "im", "id", "dont", "alright", "woah", "ooh", "oh-oh-oh", "a—[", "ah", "ayy", "d-", "baby", "uh", "hah", "nigga", "niggas", "damn", "shit", "y'all", "ch", "'bout", "gettin'", "comin'", "babe")
+
+pivot_data_cleaned <- pivot_data_cleaned %>%
+  filter(!Lyrics %in% more_stopwords)
+
+```
+
+## Intro
+
+Across the intros of the sampled songs, there's an average of 23 words in an intro with stop words included, 9 words with stop words removed where 7 of those words are unique to the verse.
+
+```{r}
+library(knitr)
+library(kableExtra)
+
+
+pivot_data_cleaned <- pivot_data_cleaned %>%
+  filter(!Lyrics %in% more_stopwords)
+
+avg_words_with_stopwords <- pivot_data %>%
+  filter(Section == "intro") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_words = mean(length(Lyrics))) %>%
+  summarise(mean_average_words_with_stopwords = mean(average_words))
+ avg_words_with_stopwords
+ 
+avg_words_no_stopwords <- pivot_data_cleaned %>%
+  filter(Section == "intro") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_words = mean(length(Lyrics))) %>%
+  summarise(mean_average_words = mean(average_words))
+avg_words_no_stopwords
+
+avg_unique_words_verse <- pivot_data_cleaned %>%
+  filter(Section == "intro") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_unique_words = mean(length(unique(Lyrics)))) %>%
+  summarise(mean_average_unique_words = mean(average_unique_words))
+avg_unique_words_verse
+
+dtaf <- c(avg_words_with_stopwords, avg_words_no_stopwords, avg_unique_words_verse)
+dtaf <- data.frame(dtaf)
+dtaf <- pivot_longer(dtaf, everything(), names_to = "Average", values_to = "Value")
+dtaf$Average <- c("Average Including Stopwords", "Average Excluding Stopwords", "Average Unique Words (excluding stopwords)")
+
+kable(dtaf, format = "html", caption = "Summary Table") %>%
+  kable_styling("striped", full_width = FALSE)
+```
+
+```{r}
+
+df <- data.frame(
+  Component = c("Average Words (+ SW)", 
+                "Average Words (-SW)", 
+                "Average Unique Words (-SW)"),
+  Count = c(avg_words_with_stopwords$mean_average_words_with_stopwords, avg_words_no_stopwords$mean_average_words, avg_unique_words_verse$mean_average_unique_words)
+)
+
+ ggplot(df, aes(x = Component, y = Count, fill = Component)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Intro Word Composition", y = "Count") +
+  theme_minimal() +
+  theme(plot.margin = margin(5, 5, 5, 5, "mm"),
+        legend.position = "none",
+        plot.title = element_text(hjust = 0.5, vjust = 0.5, size = 14, margin = margin(5, 0, 5, 0)),
+        plot.title.position = "plot")
+
+```
+
+```{r}
+
+ pivot_data_intro <- pivot_data_cleaned %>%
+  filter(Section == "intro") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Lyrics) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) 
+pivot_data_intro
+
+pivot_data_intro <- pivot_data_intro %>%
+  filter(!Lyrics %in% more_stopwords)
+
+pivot_data_intro %>%
+  filter(n > 1) %>%
+  ggplot(aes(Lyrics, n)) +
+  geom_bar(stat = "identity", fill = "#22BBFE") +
+  xlab("Lyrics") +
+  ylab("Frequency") +
+  ggtitle("Words Frequently Used in Intros") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  coord_flip()
 ```
 
 
-## Generating New Song
-when generating a new song, the sampled lyrics should be unnested and seperated based on their sections of intro/verse, chorus, bridge, outro. Currently, everything is bundled together. 
-Also use n-grams to make the generated lyrics more cohesive
+
+```{r}
+pivot_data_intro %>%
+  rename(word = Lyrics) %>%
+  inner_join(get_sentiments("bing"), by = "word") 
+```
+
+## Verse 1
+
+Across the first verse's of the sampled songs, there's an average of 64 words in verse 1 with stop words included, 20 words with stop words removed where 18 of those words are unique to the verse.
+
+```{r}
+avg_words_with_stopwords <- pivot_data %>%
+  filter(Section == "verse1") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_words = mean(length(Lyrics))) %>%
+  summarise(mean_average_words_with_stopwords = mean(average_words))
+ avg_words_with_stopwords
+ 
+avg_words_no_stopwords <- pivot_data_cleaned %>%
+  filter(Section == "verse1") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_words = mean(length(Lyrics))) %>%
+  summarise(mean_average_words = mean(average_words))
+avg_words_no_stopwords
+
+avg_unique_words_verse <- pivot_data_cleaned %>%
+  filter(Section == "verse1") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_unique_words = mean(length(unique(Lyrics)))) %>%
+  summarise(mean_average_unique_words = mean(average_unique_words))
+avg_unique_words_verse
+
+dtaf <- c(avg_words_with_stopwords, avg_words_no_stopwords, avg_unique_words_verse)
+dtaf <- data.frame(dtaf)
+dtaf <- pivot_longer(dtaf, everything(), names_to = "Average", values_to = "Value")
+dtaf$Average <- c("Average Including Stopwords", "Average Excluding Stopwords", "Average Unique Words (excluding stopwords)")
+
+kable(dtaf, format = "html", caption = "Summary Table") %>%
+  kable_styling("striped", full_width = FALSE)
+```
+
+```{r}
+df <- data.frame(
+  Component = c("Average Words (+ SW)", 
+                "Average Words (-SW)", 
+                "Average Unique Words (-SW)"),
+  Count = c(avg_words_with_stopwords$mean_average_words_with_stopwords, avg_words_no_stopwords$mean_average_words, avg_unique_words_verse$mean_average_unique_words)
+)
+
+ggplot(df, aes(x = Component, y = Count, fill = Component)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Verse1 Word Composition", y = "Count") +
+  theme_minimal() +
+  theme(plot.margin = margin(5, 5, 5, 5, "mm"),
+        legend.position = "none",
+        plot.title = element_text(hjust = 0.5, vjust = 0.5, size = 14, margin = margin(10, 0, 10, 0)),
+        plot.title.position = "plot")
+
+```
+
+```{r}
+ pivot_data_verse1 <- pivot_data_cleaned %>%
+  filter(Section == "verse1") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Lyrics) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) 
+
+pivot_data_verse1 <- pivot_data_verse1 %>%
+  filter(!Lyrics %in% more_stopwords)
+
+
+pivot_data_verse1 %>%
+  filter(n > 2) %>%
+  ggplot(aes(Lyrics, n)) +
+  geom_bar(stat = "identity", fill = "#22BBFE") +
+  xlab("Lyrics") +
+  ylab("Frequency") +
+  ggtitle("Words Frequently Used in Verse 1") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  coord_flip()
+
+
+```
+
+```{r}
+pivot_data_verse1 %>%
+  rename(word = Lyrics) %>%
+  inner_join(get_sentiments("bing"), by = "word") 
+```
+
+## Pre-Chorus
+
+Across the pre-chorus of the sampled songs, there's an average of 23 words with stop words included in a pre-chorus, 8 words with stop words removed where 6 of those words are unique to the verse.
+
+```{r}
+avg_words_with_stopwords <- pivot_data %>%
+  filter(Section == "prechorus") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_words = mean(length(Lyrics))) %>%
+  summarise(mean_average_words_with_stopwords = mean(average_words))
+ avg_words_with_stopwords
+ 
+avg_words_no_stopwords <- pivot_data_cleaned %>%
+  filter(Section == "prechorus") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_words = mean(length(Lyrics))) %>%
+  summarise(mean_average_words = mean(average_words))
+avg_words_no_stopwords
+
+avg_unique_words_verse <- pivot_data_cleaned %>%
+  filter(Section == "prechorus") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_unique_words = mean(length(unique(Lyrics)))) %>%
+  summarise(mean_average_unique_words = mean(average_unique_words))
+avg_unique_words_verse
+
+
+kable(dtaf, format = "html", caption = "Summary Table") %>%
+  kable_styling("striped", full_width = FALSE)
+```
+
+```{r}
+df <- data.frame(
+  Component = c("Average Words (+ SW)", 
+                "Average Words (-SW)", 
+                "Average Unique Words (-SW)"),
+  Count = c(avg_words_with_stopwords$mean_average_words_with_stopwords, avg_words_no_stopwords$mean_average_words, avg_unique_words_verse$mean_average_unique_words)
+)
+
+ggplot(df, aes(x = Component, y = Count, fill = Component)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Word Composition", y = "Count") +
+  theme_minimal() +
+  theme(plot.margin = margin(5, 5, 5, 5, "mm"),
+        legend.position = "none",
+        plot.title = element_text(hjust = 0.5, vjust = 0.5, size = 14, margin = margin(10, 0, 10, 0)),
+        plot.title.position = "plot")
+
+```
+
+```{r}
+ pivot_data_prechorus <- pivot_data_cleaned %>%
+  filter(Section == "prechorus") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Lyrics) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) 
+pivot_data_intro
+
+pivot_data_prechorus <- pivot_data_prechorus %>%
+  filter(!Lyrics %in% more_stopwords)
+
+pivot_data_prechorus %>%
+  filter(n > 1) %>%
+  ggplot(aes(Lyrics, n)) +
+  geom_bar(stat = "identity", fill = "#22BBFE") +
+  xlab("Lyrics") +
+  ylab("Frequency") +
+  ggtitle("Words Frequently Used in Pre-Chorus") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  coord_flip()
+
+
+```
+
+```{r}
+pivot_data_prechorus %>%
+  rename(word = Lyrics) %>%
+  inner_join(get_sentiments("bing"), by = "word") 
+```
+
+## Chorus
+
+On average, the chorus of the sampled songs contain 50 words with stop words and 15 words without where only 9 of those words are unique
+
+```{r}
+avg_words_with_stopwords <- pivot_data %>%
+  filter(Section == "chorus") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_words = mean(length(Lyrics))) %>%
+  summarise(mean_average_words_with_stopwords = mean(average_words))
+ avg_words_with_stopwords
+ 
+avg_words_no_stopwords <- pivot_data_cleaned %>%
+  filter(Section == "chorus") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_words = mean(length(Lyrics))) %>%
+  summarise(mean_average_words = mean(average_words))
+avg_words_no_stopwords
+
+avg_unique_words_verse <- pivot_data_cleaned %>%
+  filter(Section == "chorus") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_unique_words = mean(length(unique(Lyrics)))) %>%
+  summarise(mean_average_unique_words = mean(average_unique_words))
+avg_unique_words_verse
+
+kable(dtaf, format = "html", caption = "Summary Table") %>%
+  kable_styling("striped", full_width = FALSE)
+```
+
+```{r}
+df <- data.frame(
+  Component = c("Average Words (+ SW)", 
+                "Average Words (-SW)", 
+                "Average Unique Words (-SW)"),
+  Count = c(avg_words_with_stopwords$mean_average_words_with_stopwords, avg_words_no_stopwords$mean_average_words, avg_unique_words_verse$mean_average_unique_words)
+)
+
+ggplot(df, aes(x = Component, y = Count, fill = Component)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Word Composition", y = "Count") +
+  theme_minimal() +
+  theme(plot.margin = margin(5, 5, 5, 5, "mm"),
+        legend.position = "none",
+        plot.title = element_text(hjust = 0.5, vjust = 0.5, size = 14, margin = margin(10, 0, 10, 0)),
+        plot.title.position = "plot")
+
+```
+
+```{r}
+ pivot_data_chorus <- pivot_data_cleaned %>%
+  filter(Section == "chorus") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Lyrics) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) 
+pivot_data_chorus
+
+pivot_data_chorus <- pivot_data_chorus %>%
+  filter(!Lyrics %in% more_stopwords)
+
+pivot_data_chorus %>%
+  filter(n > 2) %>%
+  ggplot(aes(Lyrics, n)) +
+   geom_bar(stat = "identity", fill = "#22BBFE") +
+  xlab("Lyrics") +
+  ylab("Frequency") +
+  ggtitle("Words Frequently Used in Chorus") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  coord_flip()
+
+```
+
+```{r}
+pivot_data_chorus %>%
+  filter(n > 2) %>%
+  rename(word = Lyrics) %>%
+  inner_join(get_sentiments("nrc"), by = "word") 
+```
+
+## Post-Chorus
+
+Across the post-chorus of the sampled songs, there's an average of 40 words with stop words included in a pre-chorus, 10 words with stop words removed where 8 of those words are unique to the verse.
+
+```{r}
+avg_words_with_stopwords <- pivot_data %>%
+  filter(Section == "postchorus") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_words = mean(length(Lyrics))) %>%
+  summarise(mean_average_words_with_stopwords = mean(average_words))
+ avg_words_with_stopwords
+ 
+avg_words_no_stopwords <- pivot_data_cleaned %>%
+  filter(Section == "postchorus") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_words = mean(length(Lyrics))) %>%
+  summarise(mean_average_words = mean(average_words))
+avg_words_no_stopwords
+
+avg_unique_words_verse <- pivot_data_cleaned %>%
+  filter(Section == "postchorus") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_unique_words = mean(length(unique(Lyrics)))) %>%
+  summarise(mean_average_unique_words = mean(average_unique_words))
+avg_unique_words_verse
+
+
+kable(dtaf, format = "html", caption = "Summary Table") %>%
+  kable_styling("striped", full_width = FALSE)
+```
+
+```{r}
+df <- data.frame(
+  Component = c("Average Words (+ SW)", 
+                "Average Words (-SW)", 
+                "Average Unique Words (-SW)"),
+  Count = c(avg_words_with_stopwords$mean_average_words_with_stopwords, avg_words_no_stopwords$mean_average_words, avg_unique_words_verse$mean_average_unique_words)
+)
+
+ggplot(df, aes(x = Component, y = Count, fill = Component)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Word Composition", y = "Count") +
+  theme_minimal() +
+  theme(plot.margin = margin(5, 5, 5, 5, "mm"),
+        legend.position = "none",
+        plot.title = element_text(hjust = 0.5, vjust = 0.5, size = 14, margin = margin(10, 0, 10, 0)),
+        plot.title.position = "plot")
+
+```
+
+```{r}
+ pivot_data_postchorus <- pivot_data_cleaned %>%
+  filter(Section == "postchorus") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Lyrics) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) 
+pivot_data_postchorus
+
+pivot_data_postchorus <- pivot_data_postchorus %>%
+  filter(!Lyrics %in% more_stopwords)
+
+
+pivot_data_postchorus %>%
+  filter(n > 1) %>%
+  ggplot(aes(Lyrics, n)) +
+  geom_bar(stat = "identity") +
+  xlab("Lyrics") +
+  ylab("Frequency") +
+  ggtitle("Words Frequently Used in Post-Chorus") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  coord_flip()
+```
+
+```{r}
+pivot_data_postchorus %>%
+  rename(word = Lyrics) %>%
+  inner_join(get_sentiments("bing"), by = "word") 
+```
+
+## Verse 2
+
+On average, the second verse of the sampled songs contain 73.5 words with stop words and 25 words without where 22 of those words are unique
+
+```{r}
+avg_words_with_stopwords <- pivot_data %>%
+  filter(Section == "verse2") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_words = mean(length(Lyrics))) %>%
+  summarise(mean_average_words_with_stopwords = mean(average_words))
+ avg_words_with_stopwords
+ 
+avg_words_no_stopwords <- pivot_data_cleaned %>%
+  filter(Section == "verse2") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_words = mean(length(Lyrics))) %>%
+  summarise(mean_average_words = mean(average_words))
+avg_words_no_stopwords
+
+avg_unique_words_verse <- pivot_data_cleaned %>%
+  filter(Section == "verse2") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_unique_words = mean(length(unique(Lyrics)))) %>%
+  summarise(mean_average_unique_words = mean(average_unique_words))
+avg_unique_words_verse
+
+kable(dtaf, format = "html", caption = "Summary Table") %>%
+  kable_styling("striped", full_width = FALSE)
+```
+
+```{r}
+df <- data.frame(
+  Component = c("Average Words (+ SW)", 
+                "Average Words (-SW)", 
+                "Average Unique Words (-SW)"),
+  Count = c(avg_words_with_stopwords$mean_average_words_with_stopwords, avg_words_no_stopwords$mean_average_words, avg_unique_words_verse$mean_average_unique_words)
+)
+
+ggplot(df, aes(x = Component, y = Count, fill = Component)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Word Composition", y = "Count") +
+  theme_minimal() +
+  theme(plot.margin = margin(5, 5, 5, 5, "mm"),
+        legend.position = "none",
+        plot.title = element_text(hjust = 0.5, vjust = 0.5, size = 14, margin = margin(10, 0, 10, 0)),
+        plot.title.position = "plot")
+
+```
+
+```{r}
+ pivot_data_verse2 <- pivot_data_cleaned %>%
+  filter(Section == "verse2") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Lyrics) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) 
+
+pivot_data_verse2 <- pivot_data_verse2 %>%
+  filter(!Lyrics %in% more_stopwords)
+
+pivot_data_verse2 %>%
+  filter(n > 2) %>%
+  ggplot(aes(Lyrics, n)) +
+   geom_bar(stat = "identity", fill = "#22BBFE") +
+  xlab("Lyrics") +
+  ylab("Frequency") +
+  ggtitle("Words Frequently Used in Verse 2") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  coord_flip()
+
+
+```
+
+```{r}
+pivot_data_verse2 %>%
+  rename(word = Lyrics) %>%
+  inner_join(get_sentiments("nrc"), by = "word") 
+```
+
+## Bridge
+
+Across the intros of the sampled songs, there's an average of 53 words in an intro with stop words included, 23 words with stop words removed where 12 of those words are unique to the verse.
+
+```{r}
+avg_words_with_stopwords <- pivot_data %>%
+  filter(Section == "bridge") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_words = mean(length(Lyrics))) %>%
+  summarise(mean_average_words_with_stopwords = mean(average_words))
+ avg_words_with_stopwords
+ 
+avg_words_no_stopwords <- pivot_data_cleaned %>%
+  filter(Section == "bridge") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_words = mean(length(Lyrics))) %>%
+  summarise(mean_average_words = mean(average_words))
+avg_words_no_stopwords
+
+avg_unique_words_verse <- pivot_data_cleaned %>%
+  filter(Section == "bridge") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_unique_words = mean(length(unique(Lyrics)))) %>%
+  summarise(mean_average_unique_words = mean(average_unique_words))
+avg_unique_words_verse
+
+
+kable(dtaf, format = "html", caption = "Summary Table") %>%
+  kable_styling("striped", full_width = FALSE)
+```
+
+```{r}
+df <- data.frame(
+  Component = c("Average Words (+ SW)", 
+                "Average Words (-SW)", 
+                "Average Unique Words (-SW)"),
+  Count = c(avg_words_with_stopwords$mean_average_words_with_stopwords, avg_words_no_stopwords$mean_average_words, avg_unique_words_verse$mean_average_unique_words)
+)
+
+ggplot(df, aes(x = Component, y = Count, fill = Component)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Word Composition", y = "Count") +
+  theme_minimal() +
+  theme(plot.margin = margin(5, 5, 5, 5, "mm"),
+        legend.position = "none",
+        plot.title = element_text(hjust = 0.5, vjust = 0.5, size = 14, margin = margin(10, 0, 10, 0)),
+        plot.title.position = "plot")
+
+```
+
+```{r}
+ pivot_data_bridge <- pivot_data_cleaned %>%
+  filter(Section == "bridge") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Lyrics) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) 
+pivot_data_bridge
+
+
+pivot_data_bridge <- pivot_data_bridge %>%
+  filter(!Lyrics %in% more_stopwords)
+
+pivot_data_bridge %>%
+  filter(n > 2) %>%
+  ggplot(aes(Lyrics, n)) +
+   geom_bar(stat = "identity", fill = "#22BBFE") +
+  xlab("Lyrics") +
+  ylab("Frequency") +
+  ggtitle("Words Frequently Used in Bridge") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  coord_flip()
+
+```
+
+```{r}
+pivot_data_bridge %>%
+  rename(word = Lyrics) %>%
+  inner_join(get_sentiments("bing"), by = "word") 
+```
+
+## Outro
+
+Across the outros of the sampled songs, there's an average of 35 words in an intro with stop words included, 14 words with stop words removed where 9 of those words are unique to the verse.
+
+```{r}
+avg_words_with_stopwords <- pivot_data %>%
+  filter(Section == "outro") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_words = mean(length(Lyrics))) %>%
+  summarise(mean_average_words_with_stopwords = mean(average_words))
+ avg_words_with_stopwords
+ 
+avg_words_no_stopwords <- pivot_data_cleaned %>%
+  filter(Section == "outro") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_words = mean(length(Lyrics))) %>%
+  summarise(mean_average_words = mean(average_words))
+avg_words_no_stopwords
+
+avg_unique_words_verse <- pivot_data_cleaned %>%
+  filter(Section == "outro") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Artist) %>%
+  summarise(average_unique_words = mean(length(unique(Lyrics)))) %>%
+  summarise(mean_average_unique_words = mean(average_unique_words))
+avg_unique_words_verse
+
+
+kable(dtaf, format = "html", caption = "Summary Table") %>%
+  kable_styling("striped", full_width = FALSE)
+```
+
+```{r}
+df <- data.frame(
+  Component = c("Average Words (+ SW)", 
+                "Average Words (-SW)", 
+                "Average Unique Words (-SW)"),
+  Count = c(avg_words_with_stopwords$mean_average_words_with_stopwords, avg_words_no_stopwords$mean_average_words, avg_unique_words_verse$mean_average_unique_words)
+)
+
+ggplot(df, aes(x = Component, y = Count, fill = Component)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Word Composition", y = "Count") +
+  theme_minimal() +
+  theme(plot.margin = margin(5, 5, 5, 5, "mm"),
+        legend.position = "none",
+        plot.title = element_text(hjust = 0.5, vjust = 0.5, size = 14, margin = margin(10, 0, 10, 0)),
+        plot.title.position = "plot")
+
+```
+
+```{r}
+ pivot_data_outro <- pivot_data_cleaned %>%
+  filter(Section == "outro") %>%
+  mutate(Lyrics = tolower(Lyrics)) %>%
+  group_by(Lyrics) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) 
+pivot_data_outro
+
+pivot_data_bridge <- pivot_data_bridge %>%
+  filter(!Lyrics %in% more_stopwords)
+
+pivot_data_outro %>%
+  filter(n > 1) %>%
+  ggplot(aes(Lyrics, n)) +
+   geom_bar(stat = "identity", fill = "#22BBFE") +
+  xlab("Lyrics") +
+  ylab("Frequency") +
+  ggtitle("Words Frequently Used in Outro") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  coord_flip()
+```
+
+```{r}
+pivot_data_outro %>%
+  rename(word = Lyrics) %>%
+  inner_join(get_sentiments("bing"), by = "word") 
+```
 
 
 
 
 
+
+
+## Other Innert Qualities to the Sampled Music
+
+#Extracting Song Qualities from Spotify API Using Spotify API, the qualitative factors of each song is extracted (danceability, energy, tempo, key, etc)
+
+```{r}
+library(spotifyr)
+library(knitr)
+
+Sys.setenv(SPOTIFY_CLIENT_ID = "8a9ee4f456f244fba50f78ca701c4bdd") 
+Sys.setenv(SPOTIFY_CLIENT_SECRET = "d7aab5410fa342859cb7a30953003e06")
+```
+
+```{r}
+#Harry Styles' "As It was"
+hstyles_qual <- get_track_audio_features("4LRPiXqCikLlN15c3yImP7")
+hstyles_qual$Artist <- "Harry Styles"
+hstyles_qual$Song <- "As It Was"
+hstyles_qual <- hstyles_qual[, c(ncol(hstyles_qual) - 1, ncol(hstyles_qual), 1:(ncol(hstyles_qual) - 2))]
+```
+
+```{r}
+#Glass Animals "Heat Waves"
+ganimals_qual <- get_track_audio_features("3USxtqRwSYz57Ewm6wWRMp")
+ganimals_qual$Artist <- "Glass Animals"
+ganimals_qual$Song <- "Heat Waves"
+ganimals_qual <- ganimals_qual[, c(ncol(ganimals_qual) - 1, ncol(ganimals_qual), 1:(ncol(ganimals_qual) - 2))]
+```
+
+```{r}
+#Steve Lacy "Bad Habit"
+slacy_qual <- get_track_audio_features("3EaJDYHA0KnX88JvDhL9oa")
+slacy_qual$Artist <- "Steve Lacy"
+slacy_qual$Song <- "Bad Habit"
+slacy_qual <- slacy_qual[, c(ncol(slacy_qual) - 1, ncol(slacy_qual), 1:(ncol(slacy_qual) - 2))]
+```
+
+```{r}
+#Jack Harlow "First Class"
+jharlow_qual <- get_track_audio_features("0wHFktze2PHC5jDt3B17DC")
+jharlow_qual$Artist <- "Jack Harlow"
+jharlow_qual$Song <- "First Class"
+jharlow_qual <- jharlow_qual[, c(ncol(jharlow_qual) - 1, ncol(jharlow_qual), 1:(ncol(jharlow_qual) - 2))]
+jharlow_qual
+```
+
+```{r}
+#Kid Laroi "STAY" (feat Justin Beiber)
+klaroi_qual <- get_track_audio_features("5HCyWlXZPP0y6Gqq8TgA20")
+klaroi_qual$Artist <- "The Kid Laroi"
+klaroi_qual$Song <- "STAY (feat. Justin Bieber)"
+klaroi_qual <- klaroi_qual[, c(ncol(klaroi_qual) - 1, ncol(klaroi_qual), 1:(ncol(klaroi_qual) - 2))]
+```
+
+```{r}
+kbush_qual <- get_track_audio_features("1PtQJZVZIdWIYdARpZRDFO")
+kbush_qual$Artist <- "Kate Bush"
+kbush_qual$Song <- "Running Up That Hill (A Deal With God)"
+kbush_qual <- kbush_qual[, c(ncol(kbush_qual) - 1, ncol(kbush_qual), 1:(ncol(kbush_qual) - 2))]
+```
+
+```{r}
+neighbourhood_qual <- get_track_audio_features("2QjOHCTQ1Jl3zawyYOpxh6")
+neighbourhood_qual$Artist <- "the Neighbourhood"
+neighbourhood_qual$Song <- "Sweater Weather"
+neighbourhood_qual <- neighbourhood_qual[, c(ncol(neighbourhood_qual) - 1, ncol(neighbourhood_qual), 1:(ncol(neighbourhood_qual) - 2))]
+```
+
+```{r}
+slacy2_qual <- get_track_audio_features("3EaJDYHA0KnX88JvDhL9oa")
+slacy2_qual$Artist <- "Steve Lacy"
+slacy2_qual$Song <- "Dark Red"
+slacy2_qual <- slacy2_qual[, c(ncol(slacy2_qual) - 1, ncol(slacy2_qual), 1:(ncol(slacy2_qual) - 2))]
+```
+
+```{r}
+encanto_qual <- get_track_audio_features("2xJxFP6TqMuO4Yt0eOkMz")
+encanto_qual$Artist <- "Carolina Gaitan"
+encanto_qual$Song <- "We Don’t Talk About Bruno"
+encanto_qual <- encanto_qual[, c(ncol(encanto_qual) - 1, ncol(encanto_qual), 1:(ncol(encanto_qual) - 2))]
+```
+
+```{r}
+lilnasx_qual <- get_track_audio_features("5Z9KJZvQzH6PFmb8SNkxuk")
+lilnasx_qual$Artist <- "Lil Nas X"
+lilnasx_qual$Song <- "Industry Baby (feat. Jack Harlow)"
+lilnasx_qual <- lilnasx_qual[, c(ncol(lilnasx_qual) - 1, ncol(lilnasx_qual), 1:(ncol(lilnasx_qual) - 2))]
+```
+
+```{r}
+joji_qual <- get_track_audio_features("4ewazQLXFTDC8XvCbhvtXs")
+joji_qual$Artist <- "Joji"
+joji_qual$Song <- "Glimpse of Us"
+joji_qual <- joji_qual[, c(ncol(joji_qual) - 1, ncol(joji_qual), 1:(ncol(joji_qual) - 2))]
+```
+
+```{r}
+jcole_qual <- get_track_audio_features("68Dni7IE4VyPkTOH9mRWHr")
+jcole_qual$Artist <- "J.Cole"
+jcole_qual$Song <- "No Role Modelz"
+jcole_qual <- jcole_qual[, c(ncol(jcole_qual) - 1, ncol(jcole_qual), 1:(ncol(jcole_qual) - 2))]
+```
+
+```{r}
+kodak_qual <- get_track_audio_features("1Y5Jvi3eLi4Chwqch9GMem")
+kodak_qual$Artist <- "Kodak Black"
+kodak_qual$Song <- "Super Gremlin"
+kodak_qual <- kodak_qual[, c(ncol(kodak_qual) - 1, ncol(kodak_qual), 1:(ncol(kodak_qual) - 2))]
+```
+
+```{r}
+drake_qual <- get_track_audio_features("2BcMwX1MPV6ZHP4tUT9uq6")
+drake_qual$Artist <- "Drake"
+drake_qual$Song <- "Knife Talk (with 21 Savage ft. Project Pat)"
+drake_qual <- drake_qual[, c(ncol(drake_qual) - 1, ncol(drake_qual), 1:(ncol(drake_qual) - 2))]
+```
+
+```{r}
+future_qual <- get_track_audio_features("59nOXPmaKlBfGMDeOVGrIK")
+future_qual$Artist <- "Future"
+future_qual$Song <- "WAIT FOR U (feat. Drake & Tems)"
+future_qual <- future_qual[, c(ncol(future_qual) - 1, ncol(future_qual), 1:(ncol(future_qual) - 2))]
+```
+
+```{r}
+lizzo_qual <- get_track_audio_features("6HMtHNpW6YPi1hrw9tgF8P")
+lizzo_qual$Artist <- "Lizzo"
+lizzo_qual$Song <- "About Damn Time"
+lizzo_qual <- lizzo_qual[, c(ncol(lizzo_qual) - 1, ncol(lizzo_qual), 1:(ncol(lizzo_qual) - 2))]
+```
+
+```{r}
+idragons_qual <- get_track_audio_features("3CIyK1V4JEJkg02E4EJnDl")
+idragons_qual$Artist <- "Imagine Dragons"
+idragons_qual$Song <- "Enemy (with JID) "
+idragons_qual <- idragons_qual[, c(ncol(idragons_qual) - 1, ncol(idragons_qual), 1:(ncol(idragons_qual) - 2))]
+```
+
+```{r}
+amonkeys_qual <- get_track_audio_features("58ge6dfP91o9oXMzq3XkIS")
+amonkeys_qual$Artist <- "Arctic Monkeys"
+amonkeys_qual$Song <- "505"
+amonkeys_qual <- amonkeys_qual[, c(ncol(amonkeys_qual) - 1, ncol(amonkeys_qual), 1:(ncol(amonkeys_qual) - 2))]
+```
+
+```{r}
+walters_qual <- get_track_audio_features("4SqWKzw0CbA05TGszDgMlc")
+walters_qual$Artist <- "The Walters"
+walters_qual$Song <- "I Love You So"
+walters_qual <- walters_qual[, c(ncol(walters_qual) - 1, ncol(walters_qual), 1:(ncol(walters_qual) - 2))]
+```
+
+```{r}
+orodrigo_qual <- get_track_audio_features("4ZtFanR9U6ndgddUvNcjcG")
+orodrigo_qual$Artist <- "Olivia Rodrigo"
+orodrigo_qual$Song <- "good 4 u"
+orodrigo_qual <- orodrigo_qual[, c(ncol(orodrigo_qual) - 1, ncol(orodrigo_qual), 1:(ncol(orodrigo_qual) - 2))]
+```
+
+Combining rows
+
+```{r}
+API_extract <- rbind(hstyles_qual, ganimals_qual, slacy_qual, jharlow_qual, klaroi_qual)
+```
+
+## Reading Data extracted from Tunebat
+
+```{r}
+tunebat_extracted<- read.csv("https://raw.githubusercontent.com/genmid13/data607/main/Tunebat%20Extraction.csv")
+tunebat_extracted <- head(tunebat_extracted, n = nrow(tunebat_extracted))
+tunebat_extracted
+```
+
+```{r}
+data <- cbind(tunebat_extracted, API_extract)
+data <- data[, -c(9,10)]
+data <- data %>%
+  select(Artist, Song, duration_ms, BPM, Release.Date, Explicit, Album, Label, danceability, energy, key, loudness, mode, Song, speechiness, acousticness, instrumentalness, liveness, valence, tempo, tempo, time_signature)
+data$duration_ms <- round(data$duration_ms, -3)  # Round to the nearest thousand
+data$duration_ms <- substr(data$duration_ms, 1, 3)  # Keep only the first three numbers
+data
+```
+
+```{r}
+data$duration_ms <- as.numeric(data$duration_ms)
+mean_duration <- mean(data$duration_ms, na.rm = TRUE)
+cat("The average duration of the most streamed songs in 2022 is", mean_duration, "seconds with songs ranging", sd(data$duration_ms, na.rm = TRUE), "seconds below or above the mean")
+
+ggplot(data, aes(x = duration_ms)) +
+  geom_histogram(fill = "lightblue", color = "black", bins = 4) +
+  geom_vline(xintercept = mean_duration, color = "red", linetype = "dashed", size = 1) 
+```
+
+)
+
+```{r}
+
+mean_tempo <- mean(data$tempo, na.rm = TRUE)
+cat("The average tempo of the most streamed songs in 2022 is", mean_tempo, "with songs ranging", sd(data$temp, na.rm = TRUE), "below or above the mean")
+
+
+ggplot(data, aes(x = tempo)) +
+  geom_histogram(fill = "lightblue", color = "black", bins = 10) +
+  geom_vline(xintercept = mean_tempo, color = "red", linetype = "dashed", size = 1) 
+  
+```
+
+```{r}
+mean_danceability <- mean(data$danceability, na.rm = TRUE)
+cat("The average danceability of the most streamed songs in 2022 is", mean_danceability, "with songs ranging", sd(data$danceability, na.rm = TRUE), "below or above the mean")
+
+ggplot(data, aes(x = danceability)) +
+  geom_histogram(fill = "lightblue", color = "black", bins = 3) +
+  geom_vline(xintercept = mean_danceability, color = "red", linetype = "dashed", size = 1)
+```
+
+```{r}
+mean_energy <- mean(data$energy, na.rm = TRUE)
+cat("The average energy of the most streamed songs in 2022 is", mean_energy, "with songs ranging", sd(data$energy, na.rm = TRUE), "below or above the mean")
+
+ggplot(data, aes(x = energy)) +
+  geom_histogram(fill = "lightblue", color = "black", bins = 3) +
+  geom_vline(xintercept = mean_energy, color = "red", linetype = "dashed", size = 1)
+```
+
+```{r}
+mean_key <- mean(data$key, na.rm = TRUE)
+cat("The average key of the most streamed songs in 2022 is", mean_key, "with songs ranging", sd(data$key, na.rm = TRUE), "below or above the mean")
+
+ggplot(data, aes(x = key)) +
+  geom_histogram(fill = "lightblue", color = "black", bins = 3) +
+  geom_vline(xintercept = mean_key, color = "red", linetype = "dashed", size = 1)
+```
+
+```{r}
+mean_loudness <- mean(data$loudness, na.rm = TRUE)
+cat("The average loudness of the most streamed songs in 2022 is", mean_loudness, "with songs ranging", sd(data$loudness, na.rm = TRUE), "below or above the mean")
+
+ggplot(data, aes(x = loudness)) +
+  geom_histogram(fill = "lightblue", color = "black", bins = 3) +
+  geom_vline(xintercept = mean_loudness, color = "red", linetype = "dashed", size = 1)
+```
+
+```{r}
+mean_speechiness <- mean(data$speechiness, na.rm = TRUE)
+cat("The average speechiness of the most streamed songs in 2022 is", mean_speechiness, "with songs ranging", sd(data$speechiness, na.rm = TRUE), "below or above the mean")
+
+
+ggplot(data, aes(x = speechiness)) +
+  geom_histogram(fill = "lightblue", color = "black", bins = 3) +
+  geom_vline(xintercept = mean_speechiness, color = "red", linetype = "dashed", size = 1)
+```
+
+```{r}
+mean_acousticness <- mean(data$acousticness, na.rm = TRUE)
+cat("The average acousticness of the most streamed songs in 2022 is", mean_acousticness, "with songs ranging", sd(data$acousticness, na.rm = TRUE), "below or above the mean")
+
+ggplot(data, aes(x = acousticness)) +
+  geom_histogram(fill = "lightblue", color = "black", bins = 3) +
+  geom_vline(xintercept = mean_acousticness, color = "red", linetype = "dashed", size = 1)
+```
+
+```{r}
+mean_instrumentalness <- mean(data$instrumentalness, na.rm = TRUE)
+cat("The average instrumentalness of the most streamed songs in 2022 is", mean_instrumentalness, "with songs ranging", sd(data$instrumentalness, na.rm = TRUE), "below or above the mean")
+
+ggplot(data, aes(x = instrumentalness)) +
+  geom_histogram(fill = "lightblue", color = "black", bins = 3) +
+  geom_vline(xintercept = mean_instrumentalness, color = "red", linetype = "dashed", size = 1)
+```
+
+```{r}
+mean_liveness <- mean(data$liveness, na.rm = TRUE)
+cat("The average liveness of the most streamed songs in 2022 is", mean_liveness, "with songs ranging", sd(data$liveness, na.rm = TRUE), "below or above the mean")
+
+ggplot(data, aes(x = liveness)) +
+  geom_histogram(fill = "lightblue", color = "black", bins = 3) +
+  geom_vline(xintercept = mean_liveness, color = "red", linetype = "dashed", size = 1)
+```
+
+```{r}
+mean_valence <- mean(data$valence, na.rm = TRUE)
+cat("The average valence of the most streamed songs in 2022 is", mean_valence, "with songs ranging", sd(data$valence, na.rm = TRUE), "below or above the mean")
+
+ggplot(data, aes(x = valence)) +
+  geom_histogram(fill = "lightblue", color = "black", bins = 3) +
+  geom_vline(xintercept = mean_valence, color = "red", linetype = "dashed", size = 1)
+```
+
+
+```{r}
+avg_qual <- data.frame(mean_duration, mean_tempo, mean_danceability, mean_energy, mean_key, mean_loudness, mean_speechiness, mean_acousticness, mean_instrumentalness, mean_liveness, mean_valence)
+avg_qual <- pivot_longer(avg_qual, everything(), names_to = "Qualities", values_to = "Average")
+avg_qual$Qualities <- c("Duration (in seconds)", "Tempo", "Danceability", "Energy", "Key", "Loudness", "Speechiness", "Acousticness", "Instrumentalness", "Liveness", "Valence")
+
+kable(avg_qual, format = "html", caption = "Summary Table") %>%
+  kable_styling("striped", full_width = FALSE)
+```
+
+
+
+## Conclusion
