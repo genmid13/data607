@@ -1,0 +1,549 @@
+##Understnding the Market Research job market in NY
+
+
+```{r}
+library(tidyverse)
+library(rvest)
+library(httr)
+
+```
+
+```{r}
+glassdoor_data <- read_html("https://www.glassdoor.com/Job/new-york-ny-us-market-researcher-jobs-SRCH_IL.0,14_IC1132348_KO15,32.htm")
+
+glassdoor_data2 <- read_html("https://www.glassdoor.com/Job/new-york-market-researcher-jobs-SRCH_IL.0,8_IC1132348_KO9,26_IP2.htm?includeNoSalaryJobs=true&pgc=AB4AAYEAHgAAAAAAAAAAAAAAAg5qcyEAKgEBIwYEe7KeHGMytiHAxYlwsaJLw%2FDa9jupwF4%2BbxDi%2Fi6VPifrMWbQEAAA")
+
+glassdoor_data3 <- read_html("https://www.glassdoor.com/Job/new-york-market-researcher-jobs-SRCH_IL.0,8_IC1132348_KO9,26_IP3.htm?includeNoSalaryJobs=true&pgc=AB4AAoEAPAAAAAAAAAAAAAAAAg5qcyEANwECARFgBgttCgQKwJeUTRyooNc2cQFtCqPFMiZMTzWOoIBrxY2NGlz6%2BTeyMGuGZ9HpSsP9vJEAAA%3D%3D")
+
+glassdoor_data4 <- read_html("https://www.glassdoor.com/Job/new-york-market-researcher-jobs-SRCH_IL.0,8_IC1132348_KO9,26_IP4.htm?includeNoSalaryJobs=true&pgc=AB4AA4EAWgAAAAAAAAAAAAAAAg5qcyEAPQECAREuBglx2bsslBRjcmiak3hKtIi5S80ZmFuMh14JzbrbWJ1hmyVdRstgsb5qBvFgP2bolCXAjHVBkEEAAA%3D%3D")
+```
+
+
+
+
+## Extracted: Position, Company, Location, Job Posting URL, 
+```{r}
+job_board <- rep("Glassdoor", 30)
+
+positions1 <- html_nodes(glassdoor_data, ".mt-xsm") %>% html_text()
+positions2<- html_nodes(glassdoor_data2, ".mt-xsm") %>% html_text()
+positions3<- html_nodes(glassdoor_data3, ".mt-xsm") %>% html_text()
+positions4<- html_nodes(glassdoor_data4, ".mt-xsm") %>% html_text()
+positions <- c(positions1, positions2, positions3, positions4)
+
+company_name1 <- html_nodes(glassdoor_data, ".job-search-8wag7x") %>% html_text()
+company_name2<- html_nodes(glassdoor_data2, ".job-search-8wag7x") %>% html_text()
+company_name3<- html_nodes(glassdoor_data3, ".job-search-8wag7x") %>% html_text()
+company_name4<- html_nodes(glassdoor_data4, ".job-search-8wag7x") %>% html_text()
+company_name <- c(company_name1, company_name2, company_name3, company_name4)
+company_name <- str_remove(company_name, "\\d.*")
+company_name <- str_remove(company_name, ".job-search-rnnx")
+
+location1 <-html_nodes(glassdoor_data, ".location.mt-xxsm") %>% html_text()
+location2<- html_nodes(glassdoor_data2, ".location.mt-xxsm") %>% html_text()
+location3<- html_nodes(glassdoor_data3, ".location.mt-xxsm") %>% html_text()
+location4<- html_nodes(glassdoor_data4, ".location.mt-xxsm") %>% html_text()
+location <- c(location1, location2, location3, location4)
+```
+
+```{r}
+# Define a function to get pay data that handles missing values
+get_pay_data <- function(data) {
+  pay_data <- html_nodes(data, ".salary-estimate") %>% html_text()
+  
+  # Extract the number of job listings on the page
+  num_jobs <- length(html_nodes(data, ".jobLink"))
+  
+  # If the length of pay data is less than the number of jobs, fill with NA
+  if (length(pay_data) < num_jobs) {
+    missing_pay <- rep(NA, num_jobs - length(pay_data))
+    pay_data <- c(pay_data, missing_pay)
+  }
+  
+  return(pay_data)
+}
+
+# Extract pay data using the function
+pay1 <- get_pay_data(glassdoor_data)
+pay2 <- get_pay_data(glassdoor_data2)
+pay3 <- get_pay_data(glassdoor_data3)
+pay4 <- get_pay_data(glassdoor_data4)
+pay <- c(pay1, pay2, pay3, pay4)
+
+pay <- str_remove_all(pay, "\\s\\((Employer est.)\\)|\\s\\((Glassdoor est.)\\)")
+
+pay
+```
+
+
+```{r}
+job_urls1 <- glassdoor_data %>%
+  html_nodes("a.jobLink") %>%
+  html_attr("href") 
+
+job_urls2 <- glassdoor_data2 %>%
+  html_nodes("a.jobLink") %>%
+  html_attr("href") 
+
+job_urls3 <- glassdoor_data3 %>%
+  html_nodes("a.jobLink") %>%
+  html_attr("href") 
+
+job_urls4 <- glassdoor_data4 %>%
+  html_nodes("a.jobLink") %>%
+  html_attr("href") 
+
+job_urls <- c(job_urls1, job_urls2, job_urls3, job_urls4)
+
+
+job_urls <- unique(job_urls)
+job_urls <- str_c("https://www.glassdoor.com", job_urls)
+```
+
+```{r}
+#Create a list to store the vectors for each URL
+job_urlinfo <- list()
+
+# Loop through the URLs and read each page using read_html()
+for (i in seq_along(job_urls)) {
+  job_urlinfo[[i]] <- read_html(job_urls[i])
+}
+```
+
+This vector is created to retrieve the conent of the job postings that
+will prove essential for the rest of the data scraping.
+```{r}
+job_req <- list()
+for (i in 1:120) {
+  job_req[[i]] <- job_urlinfo[[i]] %>% html_elements("#JobDescriptionContainer") %>% html_text()
+}
+job_req <- unlist(job_req)
+```
+
+
+
+```{r}
+#this extract pay in a different way than before so any missing wages in the first method can then be imported through this method
+
+payx <- list()
+for (i in seq_along(job_req)) {
+  job_req[[i]] <- str_remove_all(job_req[[i]], "\\b\\d{4}")
+  matches <- str_extract_all(job_req[[i]], "\\$?\\d{2,3}(?:[.,]\\d{1,3})?([.]\\d{2})?(?:\\s?-\\s?|\\sto\\s?)?\\$?\\d{2,3}(?:[.,]\\d{1,3})?")
+  payx[[i]] <- paste(unlist(matches), collapse = ", ")
+}
+pay[is.na(pay)] <- payx[is.na(pay)]
+```
+
+```{r}
+pay <- str_replace_all(pay, "(?i)k", ",000")
+pay <- str_remove_all(pay, "(Per Hour)?")
+pay <- str_remove_all(pay, "\\s")
+add_dash_duplicate <- function(x) {
+  if (str_detect(x, "-")) return(x)
+    str_replace(x, "(\\$?\\d{2,3}(\\.)?(\\,)?\\d{2,3})", "\\1-\\1")
+}
+pay <- lapply(pay, add_dash_duplicate)
+
+min_pay <- str_extract_all(pay, "\\$?\\d{2,3}(\\.)?(\\,)?\\d{2,3}(-)")
+min_pay <- str_remove_all(min_pay, "-")
+max_pay <- str_extract_all(pay, "(-)\\$?\\d{2,3}(\\.)?(\\,)?\\d{2,3}")
+max_pay <- str_remove_all(max_pay, "-")
+
+
+```
+
+```{r}
+##converting hourly wages to yearly salary by multiplying hourly wage by 2,080 (full time hours in a year)
+min_pay <- str_remove_all(min_pay, "[\\$,]")
+matchx <- str_extract_all(min_pay, "(\\d{2})\\.(\\d{2})")
+min_pay <- str_remove_all(min_pay, "(\\d{2})\\.(\\d{2})")
+matchx <- str_remove_all(matchx, "\\.00")
+matchx <- as.numeric(matchx)
+matchx <- matchx * 2080
+min_pay[min_pay == ""] <- matchx[min_pay == ""]
+
+max_pay <- str_remove_all(max_pay, "[\\$,]")
+matchx <- str_extract_all(max_pay, "(\\d{2})\\.(\\d{2})")
+max_pay <- str_remove_all(max_pay, "(\\d{2})\\.(\\d{2})")
+matchx <- str_remove_all(matchx, "\\.00")
+matchx <- as.numeric(matchx)
+matchx <- matchx * 2080
+max_pay[max_pay == ""] <- matchx[max_pay == ""]
+max_pay
+```
+
+
+## Education Requirements
+```{r}
+educ_req <- list()
+
+for (i in seq_along(job_req)) {
+  educ_req[[i]] <- str_extract_all(job_req[[i]], "(?i)(Advanced Degree|Bachelor('s)?|Master('s)?)([(\\s\\w)?(^.(,)?)?\\n]*)?([^.\\n]*)?")
+}
+
+```
+
+Degree 
+```{r}
+degree <- list()
+
+for (i in seq_along(educ_req)) {
+  degree[[i]] <- str_extract(educ_req[[i]], "(?i)(Advanced Degree|Degree|Bachelor('s)?|Master('s)?)")
+}
+```
+
+
+
+Major
+```{r}
+major <- list()
+
+for (i in seq_along(educ_req)) {
+  matches <- str_extract_all(educ_req[[i]], "(?i)(Marketing|Advertising|Statistics|Finance|Data Science|Information Science|Information Technology|Operation(s)? Research| Mathematics|Math|ScienceEconomics|Engineering|Business|management information system|human resource|psychology|Supply Chain Management|Health Information Management | Marketing|Advertising|Statistics|Business Administration|Data Science|Economics|Psychology|Sociology|Mathematics|Market Research|Analytics|Information Systems|Communication|Public Relations|Journalism|Finance|Consumer Behavior|Digital Media|Management|Operations Research|Social Sciences|Business Analytics|Behavioral Economics|Anthropology|International Business)")
+  major[[i]] <- paste(unlist(matches), collapse = ", ")
+}
+
+```
+
+
+## Skiils
+```{r}
+skills <- list()
+
+for (i in seq_along(job_req)) {
+  skills[[i]] <- str_extract_all(job_req[[i]], "((R\\s)|(?i)(Requirement(s)?|Experience|Qualification(s)?|Python|SoTA|NLP|Natural Language Processing|\\bAI|Artificial Intelligence|\\bML|Machine Learning|PyTorch|Tensorflow|SQL|Power BI|Tableau|Data Visualization|Data Analysis|Statistical|statistic|Google|SAP|Github|Excel)[^.\\n]*)")
+}
+
+skills <- str_remove_all(skills, " ")
+
+skills <- sapply(skills, paste, collapse = ", ")
+```
+
+extracted skills
+```{r}
+extracted_skills <- list()
+
+for (i in seq_along(skills)) {
+  matches <- str_extract_all(skills[[i]],  "(R\\s)|(?i)(Python|SoTA|NLP|Natural Language Processing|\\bAI|Artificial Intelligence|\\bML\\b|Machine Learning|PyTorch|Tensorflow|SQL|Power BI|Tableau|Data Visualization|Data Analysis|Statistical|statistic|Google|SAP|Github|Excel|Data Analysis|Statistical Analysis|Qualitative Research|Quantitative Research|Survey Design|Focus Group Moderation|Data Visualization|Report Writing|SPSS|Excel|Presentation Skills|SQL|SAS|Data Collection|Market Segmentation|Competitive Analysis|Customer Insight|Predictive Modeling|Tableau|Cross-tabulation|Ethnographic Research|Multivariate Analysis|Data Interpretation|Questionnaire Design|Python|A/B Testing|Project Management|Communication Skills|Consumer Behavior Analysis)")
+  extracted_skills[[i]] <- paste(unlist(matches), collapse = ", ")
+}
+library(stringr)
+
+extracted_skills <- list()
+
+for (i in seq_along(skills)) {
+  matches <- str_extract_all(skills[[i]], "(R\\s)|(?i)(Python|SoTA|NLP|Natural Language Processing|\\bAI\\b|Artificial Intelligence|\\bML\\b|Machine Learning|PyTorch|Tensorflow|SQL|Power BI|Tableau|Data Visualization|Data Analysis|Statistical|statistic|Google|SAP|Github|Excel|Statistical Analysis|Qualitative Research|Quantitative Research|Survey Design|Focus Group Moderation|Report Writing|SPSS|Presentation Skills|SAS|Data Collection|Market Segmentation|Competitive Analysis|Customer Insight|Predictive Modeling|Cross-tabulation|Ethnographic Research|Multivariate Analysis|Data Interpretation|Questionnaire Design|A/B Testing|Project Management|Communication Skills|Consumer Behavior Analysis)")
+  extracted_skills[[i]] <- paste(unlist(matches), collapse = ", ")
+}
+
+relabelled_skills <- lapply(extracted_skills, function(skill) {
+  skill <- str_replace_all(skill, "(?i)(Python|PyTorch|Tensorflow)", "Python")
+  skill <- str_replace_all(skill, "(?i)(\\bAI\\b|Artificial Intelligence)", "AI")
+  skill <- str_replace_all(skill, "(?i)(\\bML\\b|ML\\s|Machine Learning|Predictive Modeling)", "ML")
+  skill <- str_replace_all(skill, "(?i)(Natural Language Processing|\\bNLP\\b)", "NLP")
+  skill <- str_replace_all(skill, "(?i)Data Visualization", "Data Viz")
+  skill <- str_replace_all(skill, "(?i)(Data Analysis|Data Interpretation)", "Data Analysis")
+  skill <- str_replace_all(skill, "(?i)(Statistical|statistic|Cross-tabulation|Multivariate Analysis)", "Stat Analysis")
+  skill <- str_replace_all(skill, "(?i)(Qualitative Research|Ethnographic Research|Focus Group Moderation)", "Qual Research")
+  skill <- str_replace_all(skill, "(?i)(Quantitative Research|Survey Design)", "Quant Research")
+  skill <- str_replace_all(skill, "(?i)(Excel)", "Excel")
+  skill <- str_replace_all(skill, "(?i)Presentation Skills", "Presentation")
+  skill <- str_replace_all(skill, "(?i)(Data Collection|Data Entry)", "Data Collection")
+  skill <- str_replace_all(skill, "(?i)Questionnaire Design", "Questionnaire")
+  skill <- str_replace_all(skill, "(?i)A/B Testing", "A/B Testing")
+  skill <- str_replace_all(skill, "(?i)Project Management", "Proj Management")
+  skill <- str_replace_all(skill, "(?i)Communication Skills", "Communication")
+    skill <- str_replace_all(skill, "R|R\\s", "Communication")
+  return(skill)
+})
+```
+
+
+##Years of Experience
+```{r}
+library(stringr)
+# 1. Extract years of experience details
+years_experience <- list()
+
+for (i in seq_along(job_req)) {
+  matches <- str_extract_all(job_req[[i]], "(?i)\\d+-?\\d*\\+?\\s*year((')?s)?")
+  years_experience[[i]] <- paste(unlist(matches), collapse = ", ")
+}
+
+# 2. Cleaning up years_experience
+years_experience <- lapply(years_experience, function(x) {
+  x <- str_remove_all(x, "(\\d{2}\\+?)|(years|year)")
+  x <- str_replace_all(x, "[-+]", "")
+  return(x)
+})
+
+# 3. Calculate the average of digits in each string
+calculate_average <- function(x) {
+  digits <- unlist(str_extract_all(x, "\\d")) # Extract individual digits
+  if(length(digits) == 0) return(NA) # Handle cases with no digits
+  sum(as.numeric(digits)) / length(digits)
+}
+
+years_experience <- lapply(years_experience, calculate_average)
+years_experience <- as.numeric(years_experience)
+```
+
+
+
+## Work Enviornment
+extract In-person, Remote, or Hybrid strings 
+```{r}
+work_environment <- list()
+
+# First loop to find matches
+for (i in seq_along(job_req)) {
+  matches <- str_extract_all(job_req[[i]], "(?i)(Remote|In-Person|In Person|On-Location|On location|Hybrid)")
+  
+  if(length(unlist(matches)) == 0) {
+    work_environment[[i]] <- "In-Person"
+  } else {
+    work_environment[[i]] <- paste(unlist(matches), collapse = ", ")
+  }
+}
+
+# String replacements
+work_environment <- lapply(work_environment, function(location) {
+  location <- str_replace_all(location, "(?i)(In-Person|In Person|On-Location|On location)", "In Person")
+  location <- str_replace_all(location, "(?i)(Remote|remote)", "Remote")
+  location <- str_replace_all(location, "(?i)(Hybrid|hybrid)", "Hybrid")
+  return(location)
+})
+work_environment
+```
+
+## Seniority
+extract Entry-level, Associate, Junior, or Senior strings.
+the identification of what positions are under what seniority level was
+determined by referencing the Indeed article:
+https://www.indeed.com/career-advice/career-development/seniority-level
+
+```{r}
+# Define a function to get pay data that handles missing values
+
+
+seniority_lvl <- list()
+
+for (i in seq_along(job_req)) {
+  matches <- str_extract_all(job_req[[i]], "(?i)(Entry|Assistant|Intern|Trainee|Associate|Manager|Lead |Officer|Supervisor|Junior|Senior|Executive|\\bVP|Vice President|Architect)")
+  capitalized_matches <- unlist(str_extract_all(unlist(matches), "\\b[A-Z][a-z]*\\b"))
+  seniority_lvl <- str_remove_all(seniority_lvl, ",.*")
+  seniority_lvl[[i]] <- paste(capitalized_matches, collapse = ", ")
+}
+head(seniority_lvl)
+
+
+#back up seniority data from alternative method
+seniority_lvlX <- list()
+for (i in seq_along(positions)) {
+  matches <- str_extract_all(positions[[i]], "(?i)(Entry|Assistant|Intern |Trainee|Associate|Manager|Lead |Officer|Supervisor|Junior|Senior|Executive|\\bVP|Vice President|Architect)")
+  capitalized_matches <- unlist(str_extract_all(unlist(matches), "\\b[A-Z][a-z]*\\b"))
+  seniority_lvlX <- str_remove_all(seniority_lvlX, ",.*")
+  seniority_lvlX[[i]] <- paste(capitalized_matches, collapse = ", ")
+}
+head(seniority_lvlX)
+
+#filling in some missing data
+for (i in seq_along(seniority_lvl)) {
+  if (trimws(seniority_lvl[[i]]) == "") {
+    seniority_lvl[[i]] <- seniority_lvlX[[i]]
+  }
+}
+```
+
+```{r}
+
+#relabeling seniority data
+relabelled_seniority_lvl <- lapply(seniority_lvl, function(role) {
+  ifelse(role %in% c("Entry", "Intern", "Trainee", "Assistant", "Junior"), "Entry-Level",
+    ifelse(role %in% c("Associate", "Lead", "Supervisor", "Architect"), "Mid-Level",
+      ifelse(role %in% c("Senior", "Manager"), "Senior-Level", "Undefined")))
+})
+
+# Convert list to a character vector if necessary
+relabelled_seniority_lvl <- unlist(relabelled_seniority_lvl)
+
+relabelled_seniority_lvl
+
+
+```
+
+```{r}
+positions <- str_remove_all(positions, "\\|.*")
+```
+
+##Unlisting to create a dataframe
+```{r}
+work_environment <- unlist(work_environment)
+relabelled_skills <- unlist(relabelled_skills)
+years_experience <- unlist(years_experience)
+pay <- unlist(pay)
+min_pay <- unlist(min_pay)
+max_pay <- unlist(max_pay)
+degree <- unlist(degree)
+major <- unlist(major)
+```
+
+##Creating a dataframe 
+```{r}
+data <- data.frame(positions, relabelled_seniority_lvl, company_name, location, work_environment, pay, min_pay, max_pay, degree, major, relabelled_skills, years_experience,  job_urls)
+data
+```
+
+
+```{r}
+data <- data %>%
+  mutate(major = gsub("\\.", ",", major)) %>%
+  separate_rows(major, sep = ",") %>%
+  mutate(relabelled_skills = gsub("\\.", ",", relabelled_skills)) %>%
+  separate_rows(relabelled_skills, sep = ",") %>%
+   mutate(work_environment = gsub("\\.", ",", work_environment)) %>%
+  separate_rows(work_environment, sep = ",") %>%
+  mutate(years_experience = gsub("\\.", ",", years_experience)) %>%
+  separate_rows(years_experience, sep = ",")
+
+data <- distinct(data) 
+data <- data %>% drop_na()
+data
+```
+##Wordcloud
+```{r}
+library(wordcloud)
+
+wordcloud(data$relabelled_skills, min.freq = 1, max.words=200, random.order=FALSE, rot.per=0.35, colors=brewer.pal(8, "Dark2"))
+
+wordcloud(data$major, min.freq = 1, max.words=200, random.order=FALSE, rot.per=0.35, colors=brewer.pal(8, "Dark2"))
+```
+```{r}
+data$relabelled_skills <- trimws(data$relabelled_skills)
+data$relabelled_skills <- tolower(data$relabelled_skills)
+data$relabelled_skills <- gsub("[^[:print:]]", "", data$relabelled_skills)
+
+# Remove rows where relabelled_skills is an empty string
+data <- data %>%
+  filter(relabelled_skills != "")
+
+# Get distinct skills
+distinct_skills <- data %>%
+  distinct(relabelled_skills) %>%
+  pull(relabelled_skills)
+
+data$work_environment <- trimws(data$work_environment)
+data$work_environment <- tolower(data$work_environment)
+data$work_environment <- gsub("[^[:print:]]", "", data$work_environment)
+
+distinct_skills <- data %>%
+  distinct(work_environment) %>%
+  pull(work_environment)
+
+data <- data %>% drop_na()
+
+data %>%
+  distinct(positions, company_name)
+```
+
+##Cleaned dataset (N=45)
+```{r}
+data
+```
+
+
+```{r}
+
+library(forcats)
+
+df_plot <- data %>%
+  select(positions, company_name, relabelled_seniority_lvl, relabelled_skills) %>%
+  distinct(positions, company_name, relabelled_seniority_lvl, relabelled_skills) %>%
+  add_count(relabelled_skills) %>%
+  top_n(200, n) 
+
+df_plot$relabelled_skills <- fct_reorder(df_plot$relabelled_skills, df_plot$n)
+
+ggplot(df_plot, aes(relabelled_skills)) +
+  geom_bar() +
+  coord_flip()
+```
+
+```{r}
+data %>%
+  select(positions, company_name, relabelled_seniority_lvl) %>%
+  distinct(positions, company_name, relabelled_seniority_lvl) %>%
+  ggplot(aes(relabelled_seniority_lvl)) +
+  geom_bar()
+         
+data %>%
+  select(positions, company_name, relabelled_seniority_lvl) %>%
+  distinct(positions, company_name, relabelled_seniority_lvl) %>%
+  filter(relabelled_seniority_lvl != "Undefined") %>%
+  ggplot(aes(relabelled_seniority_lvl)) +
+  geom_bar()
+```
+
+```{r}
+data %>%
+  select(positions, company_name, work_environment) %>%
+  distinct(positions, company_name, work_environment) %>%
+  ggplot(aes(work_environment)) +
+  geom_bar()
+```
+
+## Questions to answer
+What's the relationship between...
+- Seniority level and minimum pay
+- Years of experience and minimum pay
+- Work Location and minimum pay
+- Degree + Years of experience and minimum pay
+- Skill demand and Seniority
+
+```{r}
+library(knitr)
+relabelled_skills <- str_remove_all(relabelled_skills, "\\s")
+
+data %>%
+  filter(relabelled_seniority_lvl == "Mid-Level") %>%
+  distinct(positions, company_name, relabelled_skills) %>%
+  count(relabelled_skills, name = "skill_count") %>%
+  arrange(desc(skill_count)) %>%
+  mutate("Percentage of Postings" = paste0(round((skill_count / sum(skill_count)) * 100, 2), "%")) %>%
+  select(-skill_count) %>%
+  kable( caption = "Top Skills for Mid-Level Market Researchers (N = 8)", align=c('l', 'r'), col.names = c("Skills", "Percentage of Postings"))
+```
+
+```{r}
+data %>%
+  filter(relabelled_seniority_lvl == "Senior-Level") %>%
+  distinct(positions, company_name, relabelled_skills) %>%
+  count(relabelled_skills, name = "skill_count") %>%
+  arrange(desc(skill_count)) %>%
+  mutate("Percentage of Postings" = paste0(round((skill_count / sum(skill_count)) * 100, 2), "%")) %>%
+  select(-skill_count) %>%
+  kable( caption = "Top Skills for Mid-Level Market Researchers (N = 20)", align=c('l', 'r'), col.names = c("Skills", "Percentage of Postings"))
+```
+
+```{r}
+data %>%
+  filter(relabelled_seniority_lvl == "Undefined") %>%
+  distinct(positions, company_name, relabelled_skills) %>%
+  count(relabelled_skills, name = "skill_count") %>%
+  arrange(desc(skill_count)) %>%
+  mutate("Percentage of Postings" = paste0(round((skill_count / sum(skill_count)) * 100, 2), "%")) %>%
+  select(-skill_count) %>%
+  kable( caption = "Top Skills for Market Researchers' Undefined (N = 20)", align=c('l', 'r'), col.names = c("Skills", "Percentage of Postings"))
+```
+##coorelation between years of experience and pay
+```{r}
+data$min_pay <- as.numeric(data$min_pay)
+data$years_experience <- as.numeric(data$years_experience)
+
+cor_test <- cor.test(data$years_experience, data$min_pay)
+
+print(cor_test)
+
+```
+
+
